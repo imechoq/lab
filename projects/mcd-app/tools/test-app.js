@@ -23,7 +23,11 @@ function loadPlaywright() {
 const { chromium } = loadPlaywright();
 
 const APP = path.resolve(__dirname, '..', 'app', 'index.html');
-const FILE = 'file://' + APP;
+// file:// cannot fetch relative /api/* URLs, so serve the app over HTTP and
+// point MCD_APP_URL at it for a realistic run:
+//   python3 tools/mcd-server.py --port 8777
+//   MCD_APP_URL=http://127.0.0.1:8777/index.html node tools/test-app.js
+const FILE = process.env.MCD_APP_URL || ('file://' + APP);
 
 (async () => {
   const browser = await chromium.launch();

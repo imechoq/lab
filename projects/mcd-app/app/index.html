@@ -924,11 +924,8 @@ function filtered(){
   return items;
 }
 function qtyOf(code){ return state.cart.filter((l) => l.code === code).reduce((s,l) => s + l.qty, 0); }
-/* 带套餐组成（rounds）的商品必须先选规格，不能直接加购 */
-const COMBO = new Set(Object.keys(DATA.details || {}).filter((k) => {
-  const d = DATA.details[k] && DATA.details[k].data;
-  return !!(d && (d.rounds || []).length);
-}));
+/* 带套餐组成（rounds）的商品必须先选规格，不能直接加购
+   COMBO 的定义见下方「Combo detection」小节（此处不再重复声明）。 */
 function productCard(i, idx){
   const q = qtyOf(i.code);
   const off = i.original > i.price ? Math.round((1 - i.price / i.original) * 100) : 0;

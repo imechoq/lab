@@ -118,14 +118,21 @@ python3 tools/build-menu-data.py
 
 ## 端到端自测
 
+`file://` 协议下浏览器无法 fetch 相对路径的 `/api/*`，所以推荐用 HTTP 服务跑：
+
 ```bash
 npm i -D playwright
-node tools/test-app.js
+
+# 终端 1：起服务
+python3 tools/mcd-server.py --port 8777
+
+# 终端 2：跑自测
+MCD_APP_URL=http://127.0.0.1:8777/index.html node tools/test-app.js
 ```
 
-会驱动真实浏览器走完预算计算、菜单筛选、商品定制、团餐折扣、门店切换、偏好联动、移动端适配等流程，并输出结构化结果。
+脚本会驱动真实浏览器走完预算计算、菜单筛选、商品定制、套餐选规格、团餐折扣、门店切换、偏好联动、移动端适配等流程，并输出结构化结果（`errors` 数组应为空）。
 
-若 playwright 装在别处，用 `PLAYWRIGHT_MODULE=/path/to/playwright` 指定。
+若 playwright 装在别处，用 `PLAYWRIGHT_MODULE=/path/to/playwright` 指定。省略 `MCD_APP_URL` 则退回 `file://` 模式，此时接口调用会报错但界面渲染仍可验证。
 
 ## 设计约束
 
