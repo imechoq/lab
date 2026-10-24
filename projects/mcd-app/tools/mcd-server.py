@@ -9,6 +9,7 @@ Then open http://127.0.0.1:8777/  (the app degrades to the static snapshot
 when this server is not running).
 """
 import json
+import os
 import pathlib
 import re
 import sys
