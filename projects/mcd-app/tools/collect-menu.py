@@ -1,12 +1,7 @@
 """Read-only MCP snapshot capture. Credentials stay in local config, never in output."""
 import json, urllib.request, pathlib, sys, os
-
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / 'data'
-
-
+ROOT=pathlib.Path(__file__).resolve().parent.parent
 def _find_mcp_config():
-    """Locate mcp.json. Checks $MCD_MCP_CONFIG, then repo root, then ~/.workbuddy."""
     candidates = []
     env = os.environ.get('MCD_MCP_CONFIG')
     if env:
@@ -18,17 +13,10 @@ def _find_mcp_config():
             return candidate
     return None
 
-
 def _load_mcp_config():
-    """Return the mcd-mcp entry, or exit with an actionable message."""
     path = _find_mcp_config()
     if path is None:
-        raise SystemExit(
-            'MCP config not found.\n'
-            'Create an mcp.json containing:\n'
-            '  {"mcpServers": {"mcd-mcp": {"url": "...", "headers": {...}}}}\n'
-            'then run with MCD_MCP_CONFIG=/path/to/mcp.json, or place it at\n'
-            '~/.workbuddy/mcp.json')
+        raise SystemExit('MCP config not found. Set MCD_MCP_CONFIG=/path/to/mcp.json or put it at ~/.workbuddy/mcp.json')
     try:
         return json.loads(path.read_text(encoding='utf-8'))['mcpServers']['mcd-mcp']
     except Exception as exc:
@@ -72,8 +60,7 @@ rpc('initialize',{'protocolVersion':'2024-11-05','capabilities':{},'clientInfo':
 listing=rpc('tools/list',{})
 names=[x['name'] for x in listing.get('tools',[])]
 if 'query-meals' not in names: raise RuntimeError('Expected query-meals absent. Tools: '+','.join(names))
-out=DATA_DIR/'menu-snapshot.json'
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+out=ROOT/'outputs'/'menu-snapshot.json'
 if out.exists(): raise RuntimeError('Snapshot exists; refusing silent overwrite')
 data={'source':'McDonalds MCP read-only snapshot','stores':[]}
 for code,label,normal,group in [('1450256','七宝领展餐厅','145025602','145025681'),('1450442','虹桥万创中心餐厅','145044202','145044281'),('1450374','融信上坤中心餐厅','145037402','145037481')]:

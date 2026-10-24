@@ -29,7 +29,7 @@ python3 -m http.server 8777
 
 > 直接双击 `app/index.html` 也能打开，但用 HTTP 服务访问更可靠（部分浏览器会限制 `file://` 下的数据加载）。
 
-快照包含 3 家上海门店（七宝领展、虹桥万创中心、融信上坤中心）的完整菜单、分类、价格、优惠规则，以及 158 条营养数据。
+快照包含 6 家上海门店（七宝领展、虹桥万创中心、融信上坤中心、虹口双狮汇、虹口东长治路友邦、虹口星展未来中心）的完整菜单、分类、价格、优惠规则，以及 158 条营养数据、28 个活动、1119 个商品详情索引。
 
 ## 开启实时数据（可选）
 
@@ -89,16 +89,25 @@ mcd-app/
 ├── app/                    # 前端（可直接部署的静态资源）
 │   ├── index.html          # 主应用，单文件包含全部样式与逻辑
 │   ├── flow.html           # 流程说明页
-│   └── menu-data.js        # 菜单数据（由 tools/build-menu-data.py 生成）
+│   └── menu-data.js        # 菜单数据（由 tools/build-rec-data.py 生成）
 ├── data/                   # 数据源
 │   ├── menu-snapshot.json  # MCP 原始快照
+│   ├── rec-raw.json        # 推荐引擎原始数据
 │   └── group-order-plans.json
 └── tools/
     ├── mcd-server.py       # 本地只读代理（凭据不出进程）
     ├── collect-menu.py     # 抓取门店菜单快照
     ├── collect-details.py  # 补充单品详情
-    ├── build-menu-data.py  # 快照 → menu-data.js
-    └── test-app.js         # Playwright 端到端自测
+    ├── collect-rec-data.py # 抓取推荐引擎数据
+    ├── build-menu-data.py  # 旧版快照 → menu-data.js（已废弃）
+    ├── build-rec-data.py   # rec-raw.json → menu-data.js
+    ├── verify.py           # 只读验证代理连通性
+    ├── test-app.js         # Playwright 端到端自测
+    ├── test-live.js        # 实时数据接口自测
+    ├── test-ordering.js    # 下单流程自测
+    ├── test-preview.js     # 预览页面自测
+    ├── test-store-switch.js # 门店切换自测
+    └── frag-plan.js        # 配餐方案引擎
 ```
 
 ## 重新生成数据
@@ -110,11 +119,14 @@ MCD_MCP_CONFIG=/path/to/mcp.json python3 tools/collect-menu.py
 # 2. 补充商品详情
 MCD_MCP_CONFIG=/path/to/mcp.json python3 tools/collect-details.py
 
-# 3. 生成前端数据文件
-python3 tools/build-menu-data.py
+# 3. 抓取推荐引擎数据（需凭据）
+MCD_MCP_CONFIG=/path/to/mcp.json python3 tools/collect-rec-data.py
+
+# 4. 生成前端数据文件
+python3 tools/build-rec-data.py
 ```
 
-第 3 步会重写 `app/menu-data.js`，输出各门店的商品数与分类数供核对。
+第 4 步会重写 `app/menu-data.js`，输出各门店的商品数与分类数供核对。
 
 ## 端到端自测
 

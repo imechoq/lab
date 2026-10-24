@@ -2,10 +2,7 @@
 import json, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / 'data'
-APP_DIR = ROOT / 'app'
-APP_DIR.mkdir(parents=True, exist_ok=True)
-snapshot = json.loads((DATA_DIR / 'menu-snapshot.json').read_text(encoding='utf-8'))
+snapshot = json.loads((ROOT / 'outputs/menu-snapshot.json').read_text())
 assert snapshot.get('complete') is True
 
 def money(value):
@@ -120,7 +117,7 @@ payload = {
     'stores': stores,
     'details': snapshot.get('details', {}),
 }
-(APP_DIR / 'menu-data.js').write_text(
+(ROOT / 'outputs/menu-data.js').write_text(
     'window.MCD_DATA = ' + json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + ';\n')
 print('stores', len(stores))
 for store in stores:

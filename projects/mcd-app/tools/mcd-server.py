@@ -7,20 +7,8 @@ token stays in this process, and the browser only ever talks to localhost.
 Run:  python3 tools/mcd-server.py [--port 8777]
 Then open http://127.0.0.1:8777/  (the app degrades to the static snapshot
 when this server is not running).
-
-MCP credentials: this proxy reads the MCP server URL and Bearer token from a
-config file. By default it looks for `mcp.json` next to this repository, then
-`~/.workbuddy/mcp.json`. Override with the MCD_MCP_CONFIG env var:
-
-    MCD_MCP_CONFIG=/path/to/mcp.json python3 tools/mcd-server.py
-
-The file must contain an `mcpServers.mcd-mcp` entry with `url` and `headers`.
-No credentials are committed to this repository. If the config is missing the
-server still starts and serves the static snapshot; only the live /api/* calls
-report an error.
 """
 import json
-import os
 import pathlib
 import re
 import sys
@@ -31,15 +19,9 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-# tools/mcd-server.py -> project root -> app/ and data/ live one level up.
-TOOLS_DIR = pathlib.Path(__file__).resolve().parent
-ROOT = TOOLS_DIR.parent
-APP_DIR = ROOT / 'app'
-DATA_DIR = ROOT / 'data'
-
-
-def resolve_mcp_config():
-    """Locate the MCP config file. Never raises; returns None when absent."""
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+OUTPUTS = ROOT / 'outputs'
+def _find_mcp_config():
     candidates = []
     env = os.environ.get('MCD_MCP_CONFIG')
     if env:
@@ -51,8 +33,7 @@ def resolve_mcp_config():
             return candidate
     return None
 
-
-MCP_CONFIG = resolve_mcp_config()
+MCP_CONFIG = _find_mcp_config()
 
 MENU_TTL = 900          # 15 min
 STORE_TTL = 300         # 5 min
@@ -73,6 +54,34 @@ def money(value):
         return int(round(float(str(value).strip()) * 100))
     except (TypeError, ValueError):
         return None
+
+
+# ---------- nutrition name guards ----------
+# The nutrition table and the menu are different data sources. A loose match
+# silently invents numbers, so every fuzzy match must clear these guards.
+COMBO_WORDS = ('套餐', '组合', '双人', '三人', '四人', '分享', '桶', '盒', '拼',
+               '件套', '随心选', '会员', '任选')
+SIZE_RE = re.compile(r'(超大杯|大杯|中杯|小杯|大份|中份|小份|大薯条|中薯条|小薯条|\d+块|\d+件|标准|去冰|少冰|多冰|加冰)')
+SUGAR_RE = re.compile(r'(无糖|零度|低糖|0糖|零糖)')
+
+
+def _norm_name(value):
+    text = str(value or '')
+    for ch in ('™', '®', '（', '）', '(', ')', ' ', '\u3000', '·', '・', '\n'):
+        text = text.replace(ch, '')
+    return text.strip()
+
+
+def _is_combo(text):
+    return any(word in text for word in COMBO_WORDS)
+
+
+def _size_sig(text):
+    return '|'.join(sorted(set(SIZE_RE.findall(text))))
+
+
+def _sugar_sig(text):
+    return SUGAR_RE.findall(text)
 
 
 class McpClient:
@@ -172,56 +181,22 @@ class Cache:
             self.store[key] = (time.time(), value)
 
 
-class McdConfigError(RuntimeError):
-    """Raised when the MCP config file is missing or malformed."""
-
-
 class McdService:
-    """Talks to the MCP server on demand.
-
-    The config is read lazily so that the server still starts (and still serves
-    the static snapshot) on a machine that has no MCP credentials at all.
-    """
-
     def __init__(self):
+        config = json.loads(MCP_CONFIG.read_text())['mcpServers']['mcd-mcp']
+        self.url = config['url']
+        self.headers = config['headers']
         self.cache = Cache()
         self.pool = ThreadPoolExecutor(max_workers=6)
         self._local = threading.local()
         self._pool_lock = threading.Lock()
         self._clients = []
         self.nutrition_rows = None
-        self._config = None
-
-    @property
-    def config(self):
-        if self._config is None:
-            if MCP_CONFIG is None:
-                raise McdConfigError(
-                    'MCP config not found. Create an mcp.json with an '
-                    'mcpServers.mcd-mcp entry (url + headers) and point '
-                    'MCD_MCP_CONFIG at it, or put it at ~/.workbuddy/mcp.json. '
-                    'The static snapshot still works without it.')
-            try:
-                raw = json.loads(MCP_CONFIG.read_text(encoding='utf-8'))
-                entry = raw['mcpServers']['mcd-mcp']
-                self._config = {'url': entry['url'], 'headers': entry['headers']}
-            except Exception as exc:
-                raise McdConfigError(
-                    f'Cannot read MCP config at {MCP_CONFIG}: {exc}') from exc
-        return self._config
-
-    @property
-    def url(self):
-        return self.config['url']
-
-    @property
-    def headers(self):
-        return self.config['headers']
 
     def client(self):
         client = getattr(self._local, 'client', None)
         if client is None:
-            client = McpClient(self.url, self.headers)  # raises McdConfigError
+            client = McpClient(self.url, self.headers)
             self._local.client = client
             with self._pool_lock:
                 self._clients.append(client)
@@ -268,17 +243,50 @@ class McdService:
         return rows
 
     def nutrition_for(self, name):
-        clean = name.replace('™', '').replace('（', '(').replace('）', ')').strip()
+        """Match a menu item to one nutrition row, refusing lookalikes.
+
+        The nutrition table is a separate data source from the menu, so any
+        fuzzy match risks inventing numbers (a 套餐 borrowing a single burger's
+        kcal, a large drink borrowing a medium one). Rules, in order:
+          1. exact name after normalisation -> match='exact'
+          2. same "size signature" and neither side is a combo/bundle, with a
+             short substring relation -> match='derived'
+          3. otherwise None, and the UI says the接口 didn't provide it.
+        """
+        clean = _norm_name(name)
         rows = self.nutrition_map()
+        fields = ('energyKcal', 'protein', 'fat', 'carbohydrate', 'sodium')
+
+        def shape(row, match, source):
+            # energyKcal/carbohydrate are the API's names; kcal/carb are what the
+            # page and the static snapshot already speak, so ship both.
+            out = {k: row.get(k) for k in fields}
+            out.update({'kcal': row.get('energyKcal'), 'carb': row.get('carbohydrate'),
+                        'match': match, 'source': source})
+            return out
+
         for key, row in rows.items():
-            if key.replace('（', '(').replace('）', ')') == clean:
-                return {k: row.get(k) for k in
-                        ('energyKcal', 'protein', 'fat', 'carbohydrate', 'sodium')}
+            if _norm_name(key) == clean:
+                return shape(row, 'exact', key)
+
+        if _is_combo(clean):
+            return None
+        want = _size_sig(clean)
+        best = None
         for key, row in rows.items():
-            base = key.split('-')[0]
-            if base and (base in clean or clean in base):
-                return {k: row.get(k) for k in
-                        ('energyKcal', 'protein', 'fat', 'carbohydrate', 'sodium')}
+            base = _norm_name(key.split('-')[0])
+            if not base or _is_combo(base) or _size_sig(base) != want:
+                continue
+            if _sugar_sig(base) != _sugar_sig(clean):
+                continue
+            if abs(len(base) - len(clean)) > 3:
+                continue
+            if base in clean or clean in base:
+                score = abs(len(base) - len(clean))
+                if best is None or score < best[0]:
+                    best = (score, key, row)
+        if best:
+            return shape(best[2], 'derived', best[1])
         return None
 
     # ---------- stores ----------
@@ -333,6 +341,32 @@ class McdService:
         self.cache.put(key, stores)
         return stores
 
+    def deliverable_with_meta(self, address_id, be_type=2):
+        """Deliverable stores enriched with address and distance.
+
+        The directory lookup is best-effort: if the aggregate pool is cold we
+        still return the stores rather than blocking the UI on 15 queries.
+        """
+        stores = self.deliverable(address_id, be_type)
+        if not stores:
+            return stores
+        try:
+            directory = {s['code']: s for s in self.browse()}
+        except Exception:  # noqa: BLE001 - metadata is a nice-to-have
+            return stores
+        for entry in stores:
+            known = directory.get(entry['code'])
+            if known:
+                entry['address'] = entry.get('address') or known.get('address')
+                entry['distance'] = entry.get('distance') or known.get('distance')
+                entry['area'] = known.get('area')
+        return stores
+
+    def default_address(self):
+        """First saved delivery address, used when the client has none."""
+        addresses = self.addresses()
+        return addresses[0]['addressId'] if addresses else None
+
     def browse(self):
         """Merge landmark queries into one browsable Shanghai pool."""
         cached = self.cache.get('browse', STORE_TTL)
@@ -365,26 +399,78 @@ class McdService:
     # ---------- menu ----------
     @staticmethod
     def be_code(store_code, be_type):
-        """Delivery business codes follow a fixed suffix on the store code."""
+        """Business codes follow a suffix on the store code for normal stores."""
         return store_code + ('81' if be_type == 6 else '02')
+
+    def resolve_be(self, store_code, be_type):
+        """Find a working (storeCode, beCode, beType, orderType) combination.
+
+        Ordinary restaurants answer for the requested channel, but station
+        kiosks and in-station counters only serve pickup (beType=1,
+        orderType=1) and reject every delivery pairing. We probe the real
+        menu endpoint and keep whatever the store actually accepts.
+
+        The pairing rules are not interchangeable. beType=1/5 are pickup
+        (orderType=1) and must NOT carry a delivery beCode, because the
+        upstream silently answers with the delivery price list when it does.
+        beType=2/6 are delivery (orderType=2) and must carry a beCode.
+        """
+        key = f'be:{store_code}:{be_type}'
+        cached = self.cache.get(key, MENU_TTL)
+        if cached is not None:
+            return cached
+        candidates = []
+        if be_type in (1, 5):
+            # Pickup: orderType=1. Try the drive-through code, then the
+            # standard code, and try with and without a beCode, because the
+            # upstream accepts a delivery beCode here but answers with the
+            # WRONG (delivery) price list instead of failing.
+            for be in (store_code + '41', store_code + '02', ''):
+                candidates.append((be, be_type, 1))
+                candidates.append((be, 1, 1))
+        else:
+            # Delivery: orderType=2 with a business code.
+            candidates.append((store_code + ('81' if be_type == 6 else '02'), be_type, 2))
+            # Some counters answer for pickup only.
+            candidates.append((store_code + ('81' if be_type == 6 else '02'), 1, 1))
+            candidates.append((store_code + '41', be_type, 2))
+            candidates.append((store_code + '41', 1, 1))
+            if be_type == 6:
+                candidates.append((store_code + '02', 6, 2))
+        last = None
+        for be, use_type, order_type in candidates:
+            args = {'storeCode': store_code, 'beType': use_type, 'orderType': order_type}
+            if be:
+                args['beCode'] = be
+            try:
+                self.call('query-meals', args)
+                pair = (be, use_type, order_type)
+                self.cache.put(key, pair)
+                return pair
+            except Exception as exc:  # noqa: BLE001 - try the next pairing
+                last = exc
+        raise last or RuntimeError('无法为该门店找到可用的 beCode')
 
     def menu(self, store_code, be_type=2):
         key = f'menu:{store_code}:{be_type}'
         cached = self.cache.get(key, MENU_TTL)
         if cached is not None:
             return cached
-        be_code = self.be_code(store_code, be_type)
+        be_code, use_type, order_type = self.resolve_be(store_code, be_type)
         params = {'storeCode': store_code, 'beCode': be_code,
-                  'beType': be_type, 'orderType': 2}
+                  'beType': use_type, 'orderType': order_type}
         menu = self.call('query-meals', params)
         coupons = self.call('query-store-coupons', params)
         promotions = []
-        if be_type == 6:
+        if use_type == 6:
             try:
                 promotions = self.call('query-promotions', params).get('data') or []
             except Exception:  # noqa: BLE001 - promo rules are optional context
                 promotions = []
-        payload = self.transform(store_code, be_code, be_type, menu, coupons, promotions)
+        payload = self.transform(store_code, be_code, use_type, menu, coupons, promotions)
+        payload['orderType'] = order_type
+        payload['pickupOnly'] = order_type == 1
+        payload['requestedBeType'] = be_type
         self.cache.put(key, payload)
         return payload
 
@@ -441,10 +527,73 @@ class McdService:
         cached = self.cache.get(key, DETAIL_TTL)
         if cached is not None:
             return cached
+        be_code, use_type, order_type = self.resolve_be(store_code, be_type)
         result = self.call('query-meal-detail', {
-            'storeCode': store_code, 'beCode': self.be_code(store_code, be_type),
-            'beType': be_type, 'orderType': 2, 'code': code})
+            'storeCode': store_code, 'beCode': be_code,
+            'beType': use_type, 'orderType': order_type, 'code': code})
         self.cache.put(key, result.get('data') or {})
+        return result.get('data') or {}
+
+    # ---------- ordering ----------
+    @staticmethod
+    def _apply_coupon(items, coupon_code, coupon_id):
+        """Coupons belong on each item, not on the request envelope."""
+        if not coupon_code and not coupon_id:
+            return items
+        out = []
+        for item in items:
+            entry = dict(item)
+            if coupon_code and 'couponCode' not in entry:
+                entry['couponCode'] = coupon_code
+            if coupon_id and 'couponId' not in entry:
+                entry['couponId'] = coupon_id
+            out.append(entry)
+        return out
+
+    def quote(self, store_code, be_type, items, address_id=None, need_tableware=False,
+              coupon_code=None, coupon_id=None, remark=None):
+        """Price a basket through calculate-price. Never creates an order."""
+        be_code, use_type, order_type = self.resolve_be(store_code, be_type)
+        params = {'storeCode': store_code, 'beType': use_type, 'orderType': order_type,
+                  'items': self._apply_coupon(items, coupon_code, coupon_id),
+                  'needTableware': bool(need_tableware)}
+        if order_type == 2:
+            if be_code:
+                params['beCode'] = be_code
+            if address_id:
+                params['addressId'] = address_id
+        result = self.call('calculate-price', params)
+        return {'beCode': be_code, 'beType': use_type, 'orderType': order_type,
+                'data': result.get('data') or {}}
+
+    def create_order(self, store_code, be_type, items, address_id=None,
+                     need_tableware=False, remark=None, take_way_code=None,
+                     coupon_code=None, coupon_id=None):
+        """Create a real order. The caller is responsible for confirmation."""
+        be_code, use_type, order_type = self.resolve_be(store_code, be_type)
+        params = {'storeCode': store_code, 'beType': use_type, 'orderType': order_type,
+                  'items': self._apply_coupon(items, coupon_code, coupon_id),
+                  'needTableware': bool(need_tableware)}
+        if order_type == 2:
+            if be_code:
+                params['beCode'] = be_code
+            if address_id:
+                params['addressId'] = address_id
+        if take_way_code:
+            params['takeWayCode'] = take_way_code
+        if remark:
+            params['remark'] = remark
+        result = self.call('create-order', params)
+        return {'beCode': be_code, 'beType': use_type, 'orderType': order_type,
+                'data': result.get('data') or {}}
+
+    def cancel_order(self, order_id, reason_code=1):
+        result = self.call('cancel-order',
+                           {'orderId': order_id, 'cancelReasonCode': reason_code})
+        return result.get('data') or {}
+
+    def query_order(self, order_id):
+        result = self.call('query-order', {'orderId': order_id})
         return result.get('data') or {}
 
 
@@ -453,7 +602,7 @@ SERVICE = McdService()
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(APP_DIR), **kwargs)
+        super().__init__(*args, directory=str(OUTPUTS), **kwargs)
 
     def log_message(self, fmt, *args):
         pass
@@ -470,6 +619,10 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         from urllib.parse import urlparse, parse_qs
         parsed = urlparse(self.path)
+        if parsed.path == '/':
+            # Serve the app itself at the root instead of a directory listing.
+            self.path = '/qibao-mcd-app.html'
+            return super().do_GET()
         if not parsed.path.startswith('/api/'):
             return super().do_GET()
         query = parse_qs(parsed.query)
@@ -480,14 +633,22 @@ class Handler(SimpleHTTPRequestHandler):
                 if mode == 'browse':
                     return self._json({'ok': True, 'mode': mode, 'stores': SERVICE.browse()})
                 if mode == 'favorites':
-                    return self._json({'ok': True, 'mode': mode,
-                                       'stores': SERVICE.favorites(int(one('beType', 1)))})
+                    # query-nearby-stores only accepts beType 1 or 5.
+                    stores = SERVICE.favorites(1)
+                    return self._json({'ok': True, 'mode': mode, 'stores': stores})
                 if mode == 'deliver':
-                    stores = SERVICE.deliverable(one('addressId'), int(one('beType', 2)))
+                    address_id = one('addressId') or SERVICE.default_address()
+                    if not address_id:
+                        return self._json({'ok': False, 'error': '账号没有可用配送地址'}, 400)
+                    be_type = int(one('beType', 2))
+                    stores = SERVICE.deliverable_with_meta(address_id, be_type)
                     return self._json({'ok': True, 'mode': mode, 'stores': stores})
                 keyword = one('keyword', '漕宝路')
                 city = one('city', '上海')
+                # Position search supports pickup (1) and drive-through (5).
                 be_type = int(one('beType', 1))
+                if be_type not in (1, 5):
+                    be_type = 1
                 stores = SERVICE.nearby(keyword, city, be_type)
                 return self._json({'ok': True, 'mode': mode, 'stores': stores})
             if parsed.path == '/api/menu':
@@ -505,24 +666,61 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json({'ok': True, 'now': SERVICE.call('now-time-info', {}).get('data')})
             if parsed.path == '/api/account':
                 return self._json({'ok': True, 'account': SERVICE.call('query-my-account', {}).get('data')})
+            if parsed.path == '/api/order/quote':
+                body = self._read_body()
+                items = body.get('items') or []
+                if not items:
+                    return self._json({'ok': False, 'error': '购物车为空'}, 400)
+                payload = SERVICE.quote(
+                    body.get('storeCode'), int(body.get('beType', 2)), items,
+                    address_id=body.get('addressId'),
+                    need_tableware=body.get('needTableware', False),
+                    coupon_code=body.get('couponCode'), coupon_id=body.get('couponId'))
+                return self._json({'ok': True, 'quote': payload})
+            if parsed.path == '/api/order/create':
+                body = self._read_body()
+                items = body.get('items') or []
+                if not items:
+                    return self._json({'ok': False, 'error': '购物车为空'}, 400)
+                payload = SERVICE.create_order(
+                    body.get('storeCode'), int(body.get('beType', 2)), items,
+                    address_id=body.get('addressId'),
+                    need_tableware=body.get('needTableware', False),
+                    remark=body.get('remark'),
+                    take_way_code=body.get('takeWayCode'),
+                    coupon_code=body.get('couponCode'), coupon_id=body.get('couponId'))
+                return self._json({'ok': True, 'order': payload})
+            if parsed.path == '/api/order/cancel':
+                body = self._read_body()
+                if not body.get('orderId'):
+                    return self._json({'ok': False, 'error': 'orderId required'}, 400)
+                data = SERVICE.cancel_order(body['orderId'],
+                                            int(body.get('cancelReasonCode', 1)))
+                return self._json({'ok': True, 'data': data})
+            if parsed.path == '/api/order/query':
+                body = self._read_body()
+                if not body.get('orderId'):
+                    return self._json({'ok': False, 'error': 'orderId required'}, 400)
+                return self._json({'ok': True, 'order': SERVICE.query_order(body['orderId'])})
             if parsed.path == '/api/health':
-                try:
-                    mcp_url = SERVICE.url
-                    credentialed = True
-                except McdConfigError as exc:
-                    mcp_url = None
-                    credentialed = False
-                    health_error = str(exc)
-                else:
-                    health_error = None
                 return self._json({'ok': True, 'service': 'mcd-local-proxy',
-                                   'mcp': mcp_url,
-                                   'credentialed': credentialed,
-                                   'error': health_error,
-                                   'time': time.strftime('%F %T')})
+                                   'mcp': SERVICE.url, 'time': time.strftime('%F %T')})
             return self._json({'ok': False, 'error': 'unknown endpoint'}, 404)
         except Exception as exc:  # noqa: BLE001 - surface the reason to the UI
             return self._json({'ok': False, 'error': str(exc)}, 502)
+
+    def _read_body(self):
+        length = int(self.headers.get('Content-Length') or 0)
+        if not length:
+            return {}
+        raw = self.rfile.read(length)
+        try:
+            return json.loads(raw.decode())
+        except ValueError:
+            return {}
+
+    def do_POST(self):
+        self.do_GET()
 
 
 def main():
@@ -531,13 +729,6 @@ def main():
         port = int(sys.argv[sys.argv.index('--port') + 1])
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     print(f'McDonald\'s local proxy on http://127.0.0.1:{port}/', flush=True)
-    if MCP_CONFIG is None:
-        print('No MCP config found - serving the static snapshot only.',
-              flush=True)
-        print('Live data needs an mcp.json (mcpServers.mcd-mcp with url + headers).',
-              flush=True)
-    else:
-        print(f'MCP config: {MCP_CONFIG}', flush=True)
     server.serve_forever()
 
 

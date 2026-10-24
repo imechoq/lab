@@ -29,7 +29,7 @@ h1,h2,h3,h4,p{margin:0}
 
 /* ---------- shell ---------- */
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px}
-.topbar{position:sticky;top:0;z-index:40;background:rgba(251,246,238,.92);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
+.topbar{position:sticky;top:0;z-index:56;background:rgba(251,246,238,.92);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
 .topbar-in{display:flex;align-items:center;gap:12px;min-height:62px}
 .brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.02em;font-size:17px;white-space:nowrap}
 .brand .mark{width:30px;height:30px;border-radius:9px;background:var(--red);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:900;letter-spacing:-.05em}
@@ -42,7 +42,10 @@ h1,h2,h3,h4,p{margin:0}
 .cart-btn .count{min-width:20px;height:20px;border-radius:999px;background:var(--yellow);color:#231a00;font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
 .icon-btn .ico{display:none;font-size:14px;line-height:1}
 
-/* ---------- store picker: expand in place, never jump the page ---------- */
+/* ---------- store picker: expand in place, never jump the page ----------
+   The panel lives at body level (not inside .topbar) because backdrop-filter
+   on the bar would otherwise become the containing block for fixed
+   positioning and break the mobile bottom sheet. */
 .topbar-wrap{position:relative}
 .address{gap:7px;text-align:left;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;transition:border-color .16s,box-shadow .16s}
 .address:hover{border-color:#d9c9b4}
@@ -55,7 +58,7 @@ h1,h2,h3,h4,p{margin:0}
 .address[aria-expanded="true"] .caret{transform:rotate(180deg)}
 .pick-scrim{position:fixed;inset:0;background:rgba(24,18,12,.3);z-index:55;opacity:0;pointer-events:none;transition:opacity .2s}
 .pick-scrim.on{opacity:1;pointer-events:auto}
-.pick{position:absolute;z-index:58;left:0;top:calc(100% + 8px);width:min(430px,calc(100vw - 32px));background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:0 20px 46px -16px rgba(40,26,14,.36);overflow:hidden;opacity:0;transform:translateY(-8px) scale(.985);pointer-events:none;transition:opacity .18s,transform .18s}
+.pick{position:fixed;z-index:58;top:var(--pickTop,70px);left:var(--pickLeft,16px);width:var(--pickW,430px);background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:0 20px 46px -16px rgba(40,26,14,.36);overflow:hidden;opacity:0;transform:translateY(-8px) scale(.985);pointer-events:none;transition:opacity .18s,transform .18s}
 .pick.on{opacity:1;transform:none;pointer-events:auto}
 .pick-head{padding:12px 13px 10px;border-bottom:1px solid var(--line-2);display:grid;gap:9px}
 .pick-head .search{height:38px}
@@ -85,7 +88,6 @@ h1,h2,h3,h4,p{margin:0}
   .pick.on{transform:none}
   .pick-list{max-height:none}
 }
-
 /* ---------- stores page ---------- */
 .stores-top{display:grid;gap:11px;padding:16px 18px;border-bottom:1px solid var(--line-2);background:linear-gradient(160deg,#fff8ea,#fffdfa)}
 .stores-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -152,6 +154,9 @@ main{min-width:0;overflow-x:clip}
 .field:last-child{margin-bottom:0}
 .lbl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);font-weight:650;margin-bottom:7px}
 .money{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:11px;background:#fff;overflow:hidden}
+.budget-row{display:flex;gap:8px;align-items:stretch}
+.budget-row .money{flex:1;min-width:0}
+.btn.submit{flex:none;padding:0 18px;border-radius:11px;font-size:13.5px}
 .money:focus-within{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
 .money .cur{padding:0 4px 0 12px;color:var(--muted);font-weight:650}
 .money input{border:0;flex:1;min-width:0;padding:11px 12px 11px 4px;font-size:16px;font-weight:750;background:transparent}
@@ -187,6 +192,8 @@ main{min-width:0;overflow-x:clip}
 .rec .thumb img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;opacity:0;transition:opacity .3s ease}
 .rec .thumb .ph{font-size:26px;font-weight:900;color:#d9c9b2}
 .rec .body{padding:9px 10px 11px}
+.rec .tg{display:flex;gap:4px;flex-wrap:wrap;margin:3px 0 2px}
+.rec .tg i{font-style:normal;font-size:9.5px;font-weight:650;color:#8a7a68;background:#f6efe3;border-radius:4px;padding:1px 4px}
 .rec .nm{font-size:12.5px;font-weight:700;line-height:1.3;height:33px;overflow:hidden}
 .rec .pr{margin-top:5px;font-size:13px;font-weight:850;color:var(--red)}
 .rec .pr s{color:var(--muted);font-weight:500;font-size:11px;margin-left:4px}
@@ -325,10 +332,16 @@ main{min-width:0;overflow-x:clip}
 .kv b{font-weight:700;text-align:right}
 .confirmbar{margin-top:14px;display:grid;gap:8px}
 .confirmbar .btn:disabled{background:#e7dccd;color:#8f8071}
+.orderbox{border:1px solid #d8e8dd;background:var(--green-soft);border-radius:13px;padding:14px;display:grid;gap:10px}
+.orderbox-hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.orderbox-hd b{font-size:14px;color:var(--green)}
+.orderbox .kv div{border-bottom-color:rgba(31,122,77,.16)}
+.orderbox .btn{background:var(--green)}
+.orderbox .btn:hover{background:#17603c}
 
 /* ---------- bottom nav ---------- */
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,253,250,.96);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-.bottom-in{display:grid;grid-template-columns:repeat(4,1fr);max-width:560px;margin:0 auto}
+.bottom-in{display:grid;grid-template-columns:repeat(6,1fr);max-width:620px;margin:0 auto}
 .bottom button{padding:9px 4px 10px;display:grid;justify-items:center;gap:3px;font-size:10.5px;font-weight:700;color:#8b7c6b;position:relative}
 .bottom button .g{font-size:17px;line-height:1}
 .bottom button[aria-current="true"]{color:var(--red)}
@@ -369,6 +382,38 @@ main{min-width:0;overflow-x:clip}
   .hscroll{grid-auto-columns:146px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---------- 配餐方案 ---------- */
+.plan-grid{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+.plan{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;display:grid;gap:10px;align-content:start}
+.plan.over{border-color:#e3b4ab;background:#fffaf8}
+.plan .hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.plan .hd b{font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+.plan .note{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+.plan ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.plan li{display:flex;align-items:baseline;gap:8px;font-size:12.5px;padding-bottom:6px;border-bottom:1px dashed var(--line-2)}
+.plan li:last-child{border-bottom:0;padding-bottom:0}
+.plan li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.plan li .q{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.plan li .p{font-weight:750;white-space:nowrap}
+.plan .foot{display:grid;gap:3px;padding-top:9px;border-top:1px solid var(--line-2)}
+.plan .sum{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.plan .sum span{font-size:11.5px;color:var(--muted)}
+.plan .sum b{font-size:20px;font-weight:850;letter-spacing:-.02em;color:var(--red)}
+.plan .sum b.over{color:#8f1208}
+.plan .per{font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.plan .per b{font-weight:750}
+.plan .per b.ok{color:var(--green)}
+.plan .per b.bad{color:#8f1208}
+.plan .btn{width:100%;display:block;text-align:center;padding:10px 12px;font-size:13px}
+.plan-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.plan-note{font-size:11.5px;color:var(--muted);line-height:1.55;margin:10px 0 0}
+.plan-warn{background:var(--yellow-soft);border:1px solid #f0dca4;border-radius:12px;padding:12px 13px;font-size:12.5px;line-height:1.6;color:#7a6438;margin-bottom:12px}
+.plan-warn b{color:#5f4a1d}
+.plan-warn b:not(:first-child){color:#8a6400}
+@media(max-width:899px){.plan-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.plan-meta{gap:8px}}
+.plan-sum{font-size:12.5px;color:var(--ink-2);font-weight:650;margin-bottom:10px}
+
 </style>
 </head>
 <body>
@@ -383,24 +428,24 @@ main{min-width:0;overflow-x:clip}
     <div class="spacer"></div>
     <button class="icon-btn" id="switchBtn"><span class="ico">⇄</span><span class="t">换门店</span></button>
     <button class="icon-btn cart-btn" id="cartBtn"><span class="ico">🛍</span><span class="t">购物车</span><span class="count num" id="cartCount">0</span></button>
-
-    <!-- 就地展开的门店选择器：不跳转、不滚动 -->
-    <div class="pick" id="pickPanel" role="dialog" aria-label="选择门店">
-      <div class="pick-head">
-        <div class="search">🔎<input id="pickSearch" placeholder="搜商圈、地标或门店名" autocomplete="off" aria-label="搜索门店"></div>
-        <div class="pick-tabs" role="group" aria-label="门店范围">
-          <button data-picktab="nearby" aria-pressed="true">附近</button>
-          <button data-picktab="deliver" aria-pressed="false">可配送</button>
-          <button data-picktab="fav" aria-pressed="false">收藏</button>
-          <button data-picktab="all" aria-pressed="false">全部门店</button>
-        </div>
-      </div>
-      <div class="pick-list" id="pickList"></div>
-      <button class="pick-more" id="pickMore">打开完整门店列表 →</button>
-    </div>
   </div>
 </div>
+
+<!-- 就地展开的门店选择器：不跳转、不滚动 -->
 <div class="pick-scrim" id="pickScrim"></div>
+<div class="pick" id="pickPanel" role="dialog" aria-label="选择门店">
+  <div class="pick-head">
+    <div class="search">🔎<input id="pickSearch" placeholder="搜商圈、地标或门店名" autocomplete="off" aria-label="搜索门店"></div>
+    <div class="pick-tabs" role="group" aria-label="门店范围">
+      <button data-picktab="nearby" aria-pressed="true">附近</button>
+      <button data-picktab="deliver" aria-pressed="false">可配送</button>
+      <button data-picktab="fav" aria-pressed="false">收藏</button>
+      <button data-picktab="all" aria-pressed="false">全部门店</button>
+    </div>
+  </div>
+  <div class="pick-list" id="pickList"></div>
+  <button class="pick-more" id="pickMore">打开完整门店列表 →</button>
+</div>
 
 <div class="wrap">
   <div class="grid-main">
@@ -409,6 +454,7 @@ main{min-width:0;overflow-x:clip}
         <button data-nav="home" aria-current="true"><span class="glyph">⌂</span>首页</button>
         <button data-nav="menu"><span class="glyph">☰</span>菜单</button>
         <button data-nav="stores"><span class="glyph">⌖</span>门店</button>
+        <button data-nav="plans"><span class="glyph">◫</span>配餐方案</button>
         <button data-nav="prefs"><span class="glyph">✦</span>我的偏好</button>
         <button data-nav="preview"><span class="glyph">✓</span>点单预览<small class="num" id="railCart">0</small></button>
       </nav>
@@ -421,7 +467,7 @@ main{min-width:0;overflow-x:clip}
         </div>
       </div>
       <div class="panel" style="padding:12px 14px">
-        <div class="hint">数据来自麦当劳 MCP，只读快照 <b id="snapStamp">—</b>。价格以结算接口为准，本页不建单、不支付。</div>
+        <div class="hint" id="dataNote">数据来自麦当劳 MCP · <b id="snapStamp">—</b>。价格以结算接口为准，本页不建单、不支付。</div>
       </div>
     </aside>
 
@@ -434,6 +480,7 @@ main{min-width:0;overflow-x:clip}
     <button data-nav="home" aria-current="true"><span class="g">⌂</span>首页</button>
     <button data-nav="menu"><span class="g">☰</span>菜单</button>
     <button data-nav="stores"><span class="g">⌖</span>门店</button>
+    <button data-nav="plans"><span class="g">◫</span>配餐</button>
     <button data-nav="prefs"><span class="g">✦</span>偏好</button>
     <button data-nav="preview"><span class="g">🛍</span>预览<span class="dotc num" id="botCount" hidden>0</span></button>
   </div>
@@ -472,7 +519,8 @@ const live = {
   pending: {},       // in-flight requests, deduped
   loadingStore: null,// store code whose menu is currently loading
   pickCache: {},     // per-tab store lists
-  storeRows: []      // full pool for the store page
+  storeRows: [],     // full pool for the store page
+  menuError: null    // last live menu failure, surfaced instead of a silent 0
 };
 async function api(path){
   const res = await fetch(API + path, { headers: { 'Accept': 'application/json' } });
@@ -489,12 +537,18 @@ function fetchOnce(key, path){
 
 const state = Object.assign({
   view: 'home', storeCode: DATA.stores[0].code, channel: '2',
-  people: 1, budgetMode: 'per', budgetPer: 5000, budgetTotal: 5000,
+  people: 1, budgetMode: 'per', budgetPer: 0, budgetTotal: 0,
+  budgetCommitted: false,   // 只有点「提交」后预算才生效
+  budgetDraft: '',           // 输入框里的原始文本，提交前不参与筛选
   prefs: {save:true, nutri:true, share:true, spice:false},
   avoid: [], kcalMax: '', search: '', category: '__all__', filter: 'all',
   cart: [], note: '',
-  pickTab: 'nearby', pickQuery: '', storeSort: 'distance',
-  storeAddr: DATA.address || ''
+  pickTab: 'nearby', pickQuery: '', storeQuery: '', storeSort: 'distance',
+  storeAddr: DATA.address || '',
+  addressId: null,      // delivery address id from the account
+  quote: null,          // calculate-price result
+  order: null,          // create-order result
+  ordering: false       // request in flight
 }, load());
 
 function load(){
@@ -504,22 +558,42 @@ function save(){
   try { localStorage.setItem(STORAGE, JSON.stringify({
     storeCode: state.storeCode, channel: state.channel, people: state.people,
     budgetMode: state.budgetMode, budgetPer: state.budgetPer, budgetTotal: state.budgetTotal,
+    budgetCommitted: state.budgetCommitted, budgetDraft: state.budgetDraft,
     prefs: state.prefs, avoid: state.avoid, kcalMax: state.kcalMax, cart: state.cart,
     storeAddr: state.storeAddr
   })); } catch(e){}
 }
 
 /* Store directory: live list when the proxy is up, snapshot list otherwise. */
+/* Snapshot fallback for the store directory. Distances come from the
+   query-nearby-stores snapshot, so the offline path keeps the same ranking
+   signal as the live one instead of showing "distance unknown". */
+function snapshotDistance(code){
+  const addrs = DATA.addresses || {};
+  for (const key of Object.keys(addrs)){
+    const d = addrs[key].distances || {};
+    if (d[code] != null) return d[code];
+  }
+  return null;
+}
 function storeDir(){
   if (live.stores.length) return live.stores;
   return DATA.stores.map((s) => ({
     code: s.code, name: s.name, address: s.address || DATA.address || '',
-    distance: null, businessStatus: true, area: '快照', live: false
+    distance: snapshotDistance(s.code), businessStatus: true, area: '快照', live: false
   }));
+}
+/* Full pool for the store page. An empty array is truthy, so the live list
+   has to be checked by length or the page would show zero stores. */
+function storePool(){
+  return live.storeRows && live.storeRows.length ? live.storeRows : storeDir();
 }
 function storeInfo(code){
   return storeDir().find((s) => s.code === code) ||
-    (DATA.stores.find((s) => s.code === code) || DATA.stores[0]);
+    DATA.stores.find((s) => s.code === code) ||
+    /* A store outside both lists must not silently become the first store —
+       that made the header show another shop's name after switching. */
+    {code, name: '门店 ' + code, address: '', businessStatus: null};
 }
 /* Current store record, preferring live directory metadata over the snapshot. */
 function store(){
@@ -541,7 +615,21 @@ function allItems() {
   return out;
 }
 const groupMode = () => state.channel === '6';
+/* Point-of-sale channels. beType 1 = pickup, 2 = delivery, 6 = group catering.
+   Each one has its own price list upstream, so the label must always follow
+   the active channel or the numbers look wrong against the mini program. */
+const pickupMode = () => state.channel === '1';
+const CHANNEL_LABEL = {'1': '到店取餐', '2': '麦乐送', '6': '企业团餐'};
+const channelLabel = () => CHANNEL_LABEL[state.channel] || '麦乐送';
 const budgetTotal = () => state.budgetMode === 'per' ? state.budgetPer * state.people : state.budgetTotal;
+/* 输入框显示草稿值（未提交时保留用户输入），提交后才成为生效预算 */
+const budgetDraftValue = () => state.budgetDraft !== '' ? state.budgetDraft
+  : (state.budgetCommitted ? ((state.budgetMode==='per'?state.budgetPer:state.budgetTotal)/100).toFixed(0) : '');
+const budgetSummaryText = () => {
+  if (!state.budgetCommitted) return '未提交预算：不按预算筛选，优先按优惠套餐与忌口推荐。';
+  return '已提交：' + (state.budgetMode==='per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal))
+    + ' · 合计 ' + yuan(budgetTotal()) + (state.people>1 ? '（' + state.people + ' 人）' : '') + ' · 按预算推荐';
+};
 const subtotal = () => state.cart.reduce((sum, l) => sum + l.price * l.qty, 0);
 const itemCount = () => state.cart.reduce((sum, l) => sum + l.qty, 0);
 
@@ -561,29 +649,95 @@ function groupDiscount(sub){
 }
 
 /* ---------------- recommendations ---------------- */
-const AVOID_MAP = {牛:'牛',猪:'猪',鸡:'鸡',鱼:'鱼',虾:'虾',奶:'奶|芝士|冰淇淋|新地|拿铁|奶铁|牛奶',蛋:'蛋',花生:'花生'};
+/* ---------------- recommendations ----------------
+   Every attribute used below comes from the MCP payload:
+   - item.ingredients  <- derived from query-meal-detail strings
+   - item.sauce        <- derived from query-meal-detail modification values
+   - item.servings     <- derived from query-meal-detail round structure
+   - item.combo        <- derived from query-meal-detail rounds
+   - store distance    <- query-nearby-stores
+   Avoid options are limited to groups that actually occur in the data, so
+   every chip changes the result set when it is switched on. */
+const AVOID_GROUPS = ['牛', '猪', '鸡', '鱼', '奶', '蛋', '酱'];
+/* 酱 needs its own rule: a product is only blocked when the sauce is baked
+   in. When the interface exposes the sauce as a removable option the item
+   stays available and gets a "可去酱" hint instead. */
 function blocked(item){
   return state.avoid.some((a) => {
-    const pat = AVOID_MAP[a]; if (!pat) return false;
-    return new RegExp(pat).test(item.name);
+    if (a === '酱') return !!(item.sauce && item.sauce.hasSauce && !item.sauce.canRemove);
+    const hit = item.ingredients && item.ingredients[a];
+    return !!(hit && hit.length);
   });
+}
+const removableSauce = (item) => (item.sauce && item.sauce.canRemove) ? item.sauce.removable : [];
+/* 忌口可选项：只列出当前门店/渠道真实存在的分组，避免无效开关 */
+function availableAvoidGroups(){
+  const items = allItems();
+  const out = [];
+  for (const g of AVOID_GROUPS){
+    let n = 0;
+    for (const it of items){
+      if (g === '酱') { if (it.sauce && it.sauce.hasSauce) n++; }
+      else if (it.ingredients && it.ingredients[g] && it.ingredients[g].length) n++;
+    }
+    if (n > 0) out.push({key: g, count: n});
+  }
+  return out;
+}
+/* 距离参与排序：门店距离越近，同店商品得分越高（只影响排序，不改价格） */
+function distanceFactor(){
+  const info = storeInfo(state.storeCode);
+  const m = info && info.distance;
+  if (m == null) return 0;
+  return Math.max(0, 3 - m / 500);   // 0-500m 得 3 分，1500m 归零
+}
+/* 预算是否生效：仅在用户点击「提交」且金额大于 0 时才按预算筛选 */
+const budgetOn = () => state.budgetCommitted && budgetTotal() > 0;
+/* 人均预算上限（分）。总额口径换算成人均 */
+function perPersonCap(){
+  if (!budgetOn()) return null;
+  if (state.budgetMode === 'per') return state.budgetPer;
+  return Math.round(state.budgetTotal / Math.max(1, state.people));
 }
 function score(item){
   let s = 0;
-  if (item.discount) s += 3;
-  if (item.original > item.price) s += 4 * (1 - item.price / item.original);
-  if (state.prefs.save) s += (item.original - item.price) / Math.max(item.price, 1) * 6;
-  if (state.prefs.nutri && item.nutrition && item.nutrition.kcal) s += Math.max(0, 2 - item.nutrition.kcal / 400);
-  if (state.prefs.share && /套餐|分享|双人|三人|四人|桶|盒/.test(item.name)) s += 2.2;
-  if (state.prefs.spice && /辣|龙焰|椒盐|韩式/.test(item.name)) s += 1.4;
+  const cap = perPersonCap();
+  const isCombo = !!(item.combo && item.combo.isCombo);
+  const servings = item.servings || 1;
+
+  if (budgetOn()){
+    /* 已设置预算 -> 按预算推荐套餐与口味 */
+    if (cap != null){
+      const per = isCombo ? Math.round(item.price / Math.max(1, servings)) : item.price;
+      if (per <= cap){
+        /* 越接近预算上限越划算（用满预算），但不超过上限 */
+        s += 12 * (1 - (cap - per) / Math.max(cap, 1));
+      } else {
+        s -= 40;   // 明显超预算，排在后面
+      }
+    }
+    if (isCombo && servings === 1) s += 8;      // 单人套餐优先
+    if (isCombo && servings >= 2 && state.people > 1) s += 6;
+    if (state.prefs.nutri && item.nutrition && item.nutrition.kcal) s += Math.max(0, 2 - item.nutrition.kcal / 400);
+  } else {
+    /* 未设置预算 -> 依据优惠套餐与忌口项推荐 */
+    if (item.discount) s += 3;
+    if (item.original > item.price) s += 6 * (1 - item.price / item.original);
+    if (state.prefs.save) s += (item.original - item.price) / Math.max(item.price, 1) * 6;
+    if (isCombo && servings === 1) s += 4;      // 单人套餐优先
+    if (state.prefs.share && servings >= 2) s += 2.2;
+    if (state.prefs.nutri && item.nutrition && item.nutrition.kcal) s += Math.max(0, 2 - item.nutrition.kcal / 400);
+  }
+  if (state.prefs.spice && /辣|龙焰|椒盐|韩式/.test(item.name + ' ' + (item.tags||[]).join(' '))) s += 1.4;
   if (blocked(item)) s -= 100;
   if (state.kcalMax && item.nutrition && item.nutrition.kcal && item.nutrition.kcal > Number(state.kcalMax)) s -= 50;
+  s += distanceFactor();
   return s;
 }
 const GOODS = /丝巾|棒球帽|帽子|公仔|玩具|徽章|帆布|杯套|贴纸|手办|毛绒/;
 const edible = (i) => !GOODS.test(i.name);
 const recommended = () => allItems().filter((i) => edible(i) && !blocked(i)).sort((a,b) => score(b) - score(a)).slice(0, 12);
-const dealItems = () => allItems().filter((i) => edible(i) && !i.withOrder && i.original > i.price).sort((a,b) => (1 - a.price/a.original) - (1 - b.price/b.original)).slice(0, 6);
+const dealItems = () => allItems().filter((i) => edible(i) && !i.withOrder && i.original > i.price).sort((a,b) => (1 - a.price/a.original) - (1 - b.price/a.original)).slice(0, 6);
 
 /* ---------------------------- render ---------------------------- */
 function heroHTML(){
@@ -602,6 +756,7 @@ function heroHTML(){
           <span class="pill">编号 ${esc(s.code)}</span>
           ${s.distance != null ? `<span class="pill">${distanceText(s.distance)}</span>` : ''}
           <span class="pill">${loading ? '菜单加载中…' : ch.productCount + ' 个商品'}</span>
+          ${!loading && !ch.productCount && live.menuError ? `<span class="pill red">菜单加载失败</span>` : ''}
           <span class="pill ${ch.couponCount ? 'green' : ''}">门店券 ${ch.couponCount}</span>
           ${isGroup ? `<span class="pill yellow">团餐折扣 ${(ch.promotions || []).length} 条</span>` : ''}
         </div>
@@ -613,9 +768,13 @@ function heroHTML(){
     </div>
     <div style="padding:12px 22px 14px;border-top:1px solid var(--line-2)">
       <div class="channel" role="group" aria-label="点餐方式">
-        <button data-channel="2" aria-pressed="${!isGroup}">麦乐送<span>单人/多人都可</span></button>
+        <button data-channel="1" aria-pressed="${pickupMode()}">到店取餐<span>门市价 · 最低</span></button>
+        <button data-channel="2" aria-pressed="${!isGroup && !pickupMode()}">麦乐送<span>外送价 · 加配送</span></button>
         <button data-channel="6" aria-pressed="${isGroup}">企业团餐<span>满300起送 · 折扣</span></button>
       </div>
+      <div class="hint" style="margin-top:8px">${pickupMode()
+        ? '到店取餐显示门市价（与官方小程序到店取餐一致）；麦乐送为外送价，同一商品更高。'
+        : (isGroup ? '团餐为独立渠道，菜单与折扣和麦乐送不同。' : '麦乐送为外送价（门市价 + 配送口径）；切到「到店取餐」可看门市价。')}</div>
     </div>
     ${heroBody(s)}
   </section>`;
@@ -639,10 +798,15 @@ function heroBody(s){
             <button data-bmode="total" aria-pressed="${state.budgetMode==='total'}">总额</button>
           </span>
         </div>
-        <div class="money"><span class="cur">¥</span><input id="budgetInput" class="num" type="number" min="0" step="1" value="${((state.budgetMode==='per'?state.budgetPer:state.budgetTotal)/100).toFixed(0)}" aria-label="预算金额"></div>
-        <div class="hint" id="budgetSummary" style="margin-top:7px">当前：${state.budgetMode==='per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal)} · 合计 ${yuan(budgetTotal())}${state.people>1 ? '（' + state.people + ' 人）' : ''}</div>
+        <div class="budget-row">
+          <div class="money"><span class="cur">¥</span><input id="budgetInput" class="num" type="number" min="0" step="1" value="${budgetDraftValue()}" placeholder="不填则不按预算筛选" aria-label="预算金额"></div>
+          <button class="btn submit" id="budgetSubmit">提交</button>
+        </div>
+        <div class="hint" id="budgetSummary" style="margin-top:7px">${budgetSummaryText()}</div>
+        ${state.budgetCommitted ? '' : '<div class="hint" style="margin-top:4px;color:#8b7a63">填好后点「提交」才会按预算推荐；未提交时不按预算筛选。</div>'}
       </div>
       <div class="hint">${isGroup ? '团餐按商品金额合计计算折扣；分餐/摆台服务会改变折扣档位。' : '外送费、打包费与最终优惠以结算接口为准，这里只做预算参考。'}</div>
+      <button class="btn block" data-nav="plans" style="margin-top:12px">按 ${state.people} 人 / ${yuan(budgetTotal())} 预算配餐 →</button>
     </div>
     <div class="hero-note">
       <div class="lbl">已启用的偏好</div>
@@ -714,17 +878,18 @@ function renderPickList(){
   const box = byId('pickList');
   const rows = pickRows();
   if (!rows.length) {
-    box.innerHTML = `<div class="pick-empty">${state.pickQuery ? '没有匹配的门店，换个关键词试试' : '正在获取门店…'}</div>`;
+    const label = state.pickQuery ? '没有匹配的门店，换个关键词试试' : '正在获取门店…';
+    box.innerHTML = `<div class="pick-empty">${label}</div>`;
     return;
   }
   box.innerHTML = rows.slice(0, 60).map((s) => pickRow(s)).join('');
-}
-function renderPick(){
+}function renderPick(){
   renderPickList();
   document.querySelectorAll('[data-picktab]').forEach((b) =>
     b.setAttribute('aria-pressed', String(b.dataset.picktab === state.pickTab)));
 }
 function openPicker(){
+  positionPicker();
   byId('pickPanel').classList.add('on');
   byId('pickScrim').classList.add('on');
   byId('addrChip').setAttribute('aria-expanded', 'true');
@@ -733,42 +898,82 @@ function openPicker(){
   if (state.pickQuery) input.value = state.pickQuery;
   loadPickTab(state.pickTab);
 }
+/* Anchor the panel right under the address chip so it reads as "expanded
+   in place" rather than as a separate destination. */
+function positionPicker(){
+  const panel = byId('pickPanel');
+  if (window.matchMedia('(max-width:899px)').matches) {
+    panel.style.removeProperty('--pickTop');
+    panel.style.removeProperty('--pickLeft');
+    panel.style.removeProperty('--pickW');
+    return;
+  }
+  const chip = byId('addrChip');
+  const r = chip.getBoundingClientRect();
+  const w = Math.min(430, Math.max(320, r.width + 120));
+  const left = Math.min(Math.max(16, r.left), window.innerWidth - w - 16);
+  panel.style.setProperty('--pickTop', Math.round(r.bottom + 8) + 'px');
+  panel.style.setProperty('--pickLeft', Math.round(left) + 'px');
+  panel.style.setProperty('--pickW', Math.round(w) + 'px');
+}
 function closePicker(){
   byId('pickPanel').classList.remove('on');
   byId('pickScrim').classList.remove('on');
   byId('addrChip').setAttribute('aria-expanded', 'false');
 }
 function pickTabPath(tab){
-  if (tab === 'nearby') return '/stores?mode=nearby&keyword=' + encodeURIComponent(state.pickQuery || '漕宝路');
+  if (tab === 'nearby') return '/stores?mode=nearby&keyword=' + encodeURIComponent(state.pickQuery || '漕宝路') + '&beType=1';
   if (tab === 'deliver') return '/stores?mode=deliver&beType=' + state.channel;
-  if (tab === 'fav') return '/stores?mode=favorites&beType=' + state.channel;
+  if (tab === 'fav') return '/stores?mode=favorites';
   return '/stores?mode=browse';
 }
 function loadPickTab(tab){
   state.pickTab = tab;
   renderPick();
   if (!live.online) return;
-  const key = 'pick:' + tab + ':' + (state.pickQuery || '漕宝路');
+  /* The cache key must include the keyword and channel, otherwise a search
+     result would overwrite the plain list for the same tab. */
+  const key = 'pick:' + tab + ':' + (state.pickQuery || '') + ':' + state.channel;
   if (live.pickCache[tab] && tab !== 'nearby') return;
   fetchOnce(key, pickTabPath(tab))
-    .then((data) => { live.pickCache[tab] = data.stores || []; renderPickList(); })
-    .catch(() => { live.pickCache[tab] = []; renderPickList(); });
+    .then((data) => {
+      /* A slower response for a tab the user already left must not paint
+         over the list they are looking at now. */
+      if (state.pickTab !== tab) return;
+      live.pickCache[tab] = data.stores || [];
+      renderPickList();
+    })
+    .catch(() => {
+      if (state.pickTab !== tab) return;
+      live.pickCache[tab] = [];
+      renderPickList();
+    });
 }
 
 /* Live menu for the active store + channel. */
 function loadMenu(code, kind){
   const key = code + ':' + kind;
   if (live.menus[key]) return Promise.resolve(live.menus[key]);
-  if (!live.online) return Promise.resolve(null);
+  if (!live.online) {
+    live.menuError = '本地代理未启动，无法加载该门店菜单';
+    return Promise.resolve(null);
+  }
   live.loadingStore = code;
   return fetchOnce('menu:' + key, '/menu?code=' + encodeURIComponent(code) + '&beType=' + kind)
     .then((data) => {
       live.menus[key] = data.menu;
       live.loadingStore = null;
+      live.menuError = null;
       render();
       return data.menu;
     })
-    .catch(() => { live.loadingStore = null; return null; });
+    .catch((err) => {
+      live.loadingStore = null;
+      live.menuError = (err && err.message) || 'live menu failed';
+      console.error('[menu]', live.menuError, code, kind);
+      render();
+      return null;
+    });
 }
 function switchStore(code){
   if (code === state.storeCode) { closePicker(); return; }
@@ -810,18 +1015,41 @@ function storeSortRows(rows){
   }
   return list;
 }
+function storeMatches(rows, q){
+  if (!q) return rows;
+  const needle = q.trim().toLowerCase();
+  if (!needle) return rows;
+  return rows.filter((s) => (s.name || '').toLowerCase().includes(needle) ||
+    (s.address || '').toLowerCase().includes(needle) || (s.area || '').toLowerCase().includes(needle));
+}
+function storeCardsHTML(shown){
+  return shown.map((s) => {
+    const st = openState(s);
+    const active = s.code === state.storeCode;
+    return `<button class="store-card" data-store="${esc(s.code)}" data-active="${active}">
+      <div class="hd"><b>${esc(s.name)}</b><span class="go">${active ? '当前门店' : '切换'}</span></div>
+      <div class="addr">${esc(s.address || '')}</div>
+      <div class="facts">
+        ${s.distance != null ? `<i>${distanceText(s.distance)}</i>` : ''}
+        <i class="${st.cls}">${st.text}</i>
+        ${st.hours ? `<i>${st.hours}</i>` : ''}
+        ${s.reservation ? '<i>可预约</i>' : ''}
+        <i>编号 ${esc(s.code)}</i>
+      </div>
+    </button>`;
+  }).join('');
+}
 function viewStores(){
-  const rows = storeSortRows(live.storeRows || storeDir());
-  const q = state.pickQuery.trim().toLowerCase();
-  const shown = q ? rows.filter((s) => (s.name || '').toLowerCase().includes(q) || (s.address || '').toLowerCase().includes(q)) : rows;
+  const rows = storeSortRows(storePool());
+  const shown = storeMatches(rows, state.storeQuery);
   return `<section class="panel" style="overflow:hidden">
     <div class="stores-top">
       <div class="sec-head" style="margin:0">
-        <div><h2>选择门店</h2><p>共 ${shown.length} 家 · 切换后菜单、优惠与券会一起更新</p></div>
+        <div><h2>选择门店</h2><p id="storeCount">${storeCountText(rows.length, shown.length)}</p></div>
         <button class="link" id="backHome">返回首页</button>
       </div>
       <div class="stores-bar">
-        <div class="search">🔎<input id="storeSearch" placeholder="搜门店名或地址" value="${esc(state.pickQuery)}" autocomplete="off" aria-label="搜索门店"></div>
+        <div class="search">🔎<input id="storeSearch" placeholder="搜门店名或地址" value="${esc(state.storeQuery)}" autocomplete="off" aria-label="搜索门店"></div>
         <div class="sorts" role="group" aria-label="排序">
           <button data-sort="distance" aria-pressed="${state.storeSort==='distance'}">距离最近</button>
           <button data-sort="open" aria-pressed="${state.storeSort==='open'}">营业中优先</button>
@@ -829,22 +1057,22 @@ function viewStores(){
         </div>
       </div>
     </div>
-    ${shown.length ? `<div class="store-grid">${shown.map((s) => {
-      const st = openState(s);
-      const active = s.code === state.storeCode;
-      return `<button class="store-card" data-store="${esc(s.code)}" data-active="${active}">
-        <div class="hd"><b>${esc(s.name)}</b><span class="go">${active ? '当前门店' : '切换'}</span></div>
-        <div class="addr">${esc(s.address || '')}</div>
-        <div class="facts">
-          ${s.distance != null ? `<i>${distanceText(s.distance)}</i>` : ''}
-          <i class="${st.cls}">${st.text}</i>
-          ${st.hours ? `<i>${st.hours}</i>` : ''}
-          ${s.reservation ? '<i>可预约</i>' : ''}
-          <i>编号 ${esc(s.code)}</i>
-        </div>
-      </button>`;
-    }).join('')}</div>` : `<div class="empty"><b>没有匹配的门店</b>换个关键词，或清空搜索看看全部。</div>`}
+    <div id="storeResults">${shown.length ? `<div class="store-grid">${storeCardsHTML(shown)}</div>` : `<div class="empty"><b>没有匹配的门店</b>换个关键词，或清空搜索看看全部。</div>`}</div>
   </section>`;
+}
+/* Repaint only the store list, never the input, so typing keeps focus
+   and the caret stays where the user left it. */
+function storeCountText(total, shown){
+  if (!state.storeQuery.trim()) return `共 ${total} 家 · 切换后菜单、优惠与券会一起更新`;
+  return `匹配 ${shown} / 共 ${total} 家 · 切换后菜单、优惠与券会一起更新`;
+}
+function renderStoreResults(){
+  const rows = storeSortRows(storePool());
+  const shown = storeMatches(rows, state.storeQuery);
+  const box = byId('storeResults');
+  if (box) box.innerHTML = shown.length ? `<div class="store-grid">${storeCardsHTML(shown)}</div>` : `<div class="empty"><b>没有匹配的门店</b>换个关键词，或清空搜索看看全部。</div>`;
+  const count = byId('storeCount');
+  if (count) count.textContent = storeCountText(rows.length, shown.length);
 }
 
 function dealHTML(){
@@ -863,15 +1091,34 @@ function dealHTML(){
 }
 function recHTML(){
   const list = recommended();
+  const cap = perPersonCap();
+  /* The subtitle states which rule set is actually driving the order, so the
+     ranking is never a black box. */
+  const why = budgetOn()
+    ? `按已提交预算（人均 ${yuan(cap)}）推荐套餐与口味 · 优先单人套餐${state.people > 1 ? '，多人用餐' : ''}`
+    : `未设预算：按优惠套餐与忌口推荐 · 优先单人套餐`;
+  const dist = (storeInfo(state.storeCode) || {}).distance;
   return `<section class="panel sec">
-    <div class="sec-head"><div><h2>根据你的偏好推荐</h2><p>${state.prefs.save ? '优先优惠力度' : '按优惠与热度'}${state.prefs.nutri ? ' + 热量可控' : ''}${state.avoid.length ? ' · 已排除忌口' : ''}</p></div></div>
+    <div class="sec-head"><div><h2>${budgetOn() ? '按预算为你推荐' : '根据优惠与忌口推荐'}</h2><p>${why}${state.avoid.length ? ' · 已排除忌口' : ''}${dist != null ? ' · 门店 ' + distanceText(dist) : ''}</p></div></div>
     <div class="hscroll">
       ${list.map((i, idx) => `<button class="rec" data-open="${esc(i.code)}" aria-label="${esc(i.name)} ${yuan(i.price)}">
         <div class="thumb">${i.image ? `<img ${idx < 4 ? '' : 'loading="lazy" '}decoding="async" src="${esc(i.image)}" alt="" onload="this.style.opacity=1" onerror="this.style.display='none'">` : `<span class="ph">${esc(i.name.slice(0,1))}</span>`}</div>
-        <div class="body"><div class="nm">${esc(i.name)}</div><div class="pr num">${yuan(i.price)}${i.original > i.price ? `<s>${yuan(i.original)}</s>` : ''}</div></div>
+        <div class="body"><div class="nm">${esc(i.name)}</div>
+        ${recBadges(i)}
+        <div class="pr num">${yuan(i.price)}${i.original > i.price ? `<s>${yuan(i.original)}</s>` : ''}</div></div>
       </button>`).join('')}
     </div>
   </section>`;
+}
+/* Badges carry the real facts behind the ranking: serving count, removable
+   sauce and group-order exclusion. */
+function recBadges(i){
+  const out = [];
+  if (i.combo && i.combo.isCombo) out.push(i.servings === 1 ? '单人套餐' : (i.servings + ' 人份'));
+  if (i.sauce && i.sauce.canRemove && state.avoid.includes('酱')) out.push('可去酱');
+  if (i.promoExcluded) out.push('不参与团餐折扣');
+  if (!out.length) return '';
+  return `<div class="tg">${out.map((t) => `<i>${esc(t)}</i>`).join('')}</div>`;
 }
 function storeHTML(){
   const dir = storeDir();
@@ -924,12 +1171,10 @@ function filtered(){
   return items;
 }
 function qtyOf(code){ return state.cart.filter((l) => l.code === code).reduce((s,l) => s + l.qty, 0); }
-/* 带套餐组成（rounds）的商品必须先选规格，不能直接加购
-   COMBO 的定义见下方「Combo detection」小节（此处不再重复声明）。 */
 function productCard(i, idx){
   const q = qtyOf(i.code);
   const off = i.original > i.price ? Math.round((1 - i.price / i.original) * 100) : 0;
-  const spec = COMBO.has(i.code);
+  const spec = looksLikeCombo(i);
   return `<article class="pc">
     <button class="thumb" data-open="${esc(i.code)}" aria-label="查看 ${esc(i.name)} 详情">
       ${i.image ? `<img ${idx < 8 ? '' : 'loading="lazy" '}decoding="async" src="${esc(i.image)}" alt="" onload="this.style.opacity=1" onerror="this.style.display='none';this.parentNode.querySelector('.ph').style.display='grid'"><span class="ph" style="display:none;position:absolute">${esc(i.name.slice(0,1))}</span>` : `<span class="ph">${esc(i.name.slice(0,1))}</span>`}
@@ -966,9 +1211,18 @@ function viewMenu(){
       </div>
     </div>
     <section class="panel sec" style="margin-top:12px">
-      <div class="sec-head"><div><h2>${state.category==='__all__' ? '全部菜单' : state.category==='__rec__' ? '推荐搭配' : esc(state.category)}</h2><p>${store().name} · ${groupMode() ? '企业团餐' : '麦乐送'} · 共 ${items.length} 项</p></div><span class="pill">${state.filter==='all' ? '未筛选' : '已筛选'}</span></div>
-      ${items.length ? `<div class="menu-grid">${items.map((it, idx) => productCard(it, idx)).join('')}</div>` : `<div class="empty"><b>这个条件下没有商品</b>换个分类或清掉筛选试试。</div>`}
+      <div class="sec-head"><div><h2>${state.category==='__all__' ? '全部菜单' : state.category==='__rec__' ? '推荐搭配' : esc(state.category)}</h2><p id="menuCount">${store().name} · ${groupMode() ? '企业团餐' : '麦乐送'} · 共 ${items.length} 项</p></div><span class="pill">${state.filter==='all' ? '未筛选' : '已筛选'}</span></div>
+      <div id="menuResults">${items.length ? `<div class="menu-grid">${items.map((it, idx) => productCard(it, idx)).join('')}</div>` : `<div class="empty"><b>这个条件下没有商品</b>换个分类或清掉筛选试试。</div>`}</div>
     </section>`;
+}
+/* Same rule as the store page: repaint the grid only, leave the search
+   input node alone so the caret and IME composition survive. */
+function renderMenuResults(){
+  const items = filtered();
+  const box = byId('menuResults');
+  if (box) box.innerHTML = items.length ? `<div class="menu-grid">${items.map((it, idx) => productCard(it, idx)).join('')}</div>` : `<div class="empty"><b>这个条件下没有商品</b>换个分类或清掉筛选试试。</div>`;
+  const count = byId('menuCount');
+  if (count) count.textContent = `${store().name} · ${groupMode() ? '企业团餐' : '麦乐送'} · 共 ${items.length} 项`;
 }
 
 /* ---------------------------- prefs ---------------------------- */
@@ -984,11 +1238,11 @@ function viewPrefs(){
     </div>
   </section>
   <section class="panel sec">
-    <div class="sec-head"><div><h2>忌口</h2><p>只在有名称线索时排除，不作为过敏原判断</p></div></div>
+    <div class="sec-head"><div><h2>忌口</h2><p>选项来自本门店在售商品的真实成分线索，括号内为会被排除的商品数</p></div></div>
     <div class="pref-chips">
-      ${['牛','猪','鸡','鱼','虾','奶','蛋','花生'].map((a) => `<button data-avoid="${a}" aria-pressed="${state.avoid.includes(a)}">${a}</button>`).join('')}
+      ${availableAvoidGroups().map((g) => `<button data-avoid="${g.key}" aria-pressed="${state.avoid.includes(g.key)}">${g.key}<span style="opacity:.6;font-size:10px">${g.count}</span></button>`).join('') || '<span class="hint">当前门店/渠道没有可按忌口排除的商品</span>'}
     </div>
-    <div class="notebox">名称匹配只能排除明显相关的餐品；麦当劳 MCP 当前没有提供完整过敏原表，不能据此保证无过敏风险。</div>
+    <div class="notebox">「酱」按商品真实含酱情况处理：酱是商品固定组成的会被排除；酱作为可去配料（接口里可取消）的会保留，并标注「可去酱」。麦当劳 MCP 未提供完整过敏原表，不能据此保证无过敏风险。</div>
   </section>
   <section class="panel sec">
     <div class="sec-head"><div><h2>热量上限</h2><p>可选；只对能匹配到营养数据的餐品生效</p></div></div>
@@ -1047,6 +1301,93 @@ function billHTML(){
   ${groupMode() && sub < 30000 ? `<div class="warnbox">团餐需商品金额合计满 ¥300 起送，当前 ${yuan2(sub)}，还差 ${yuan2(30000-sub)}。可加分享装或小食，或切到麦乐送。</div>` : ''}
   <div class="notebox">${gd.note || '优惠与费用以 calculate-price 返回为准；本页不建单、不支付。'}</div>`;
 }
+/* ---------------- ordering ----------------
+   Two steps on purpose: calculate-price shows the real total (delivery and
+   packing included), then create-order builds the order and hands back a
+   payment link. Creating an order never charges the card by itself. */
+function cartPayload(){
+  return {
+    storeCode: state.storeCode,
+    beType: state.channel,
+    addressId: state.addressId || null,
+    needTableware: false,
+    remark: state.note || null,
+    items: state.cart.map((l) => {
+      const item = { productCode: l.code, quantity: l.qty };
+      if (l.struct && l.struct.length) item.modification = { values: l.struct };
+      const rounds = l.roundGroups || [];
+      if (rounds.length) item.roundList = rounds;
+      return item;
+    })
+  };
+}
+async function doQuote(){
+  if (!state.cart.length || state.ordering) return;
+  state.ordering = true; render();
+  try {
+    const body = cartPayload();
+    const res = await fetch(API + '/order/quote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '试算失败');
+    state.quote = data.quote;
+    toast('试算完成 · 应付 ' + yuan2((data.quote.data || {}).price || 0));
+  } catch (err) {
+    toast('试算失败：' + err.message);
+  }
+  state.ordering = false; render();
+}
+async function doCreateOrder(){
+  if (!state.cart.length || state.ordering) return;
+  const q = state.quote && (state.quote.data || {});
+  const total = q && q.price ? yuan2(q.price) : yuan2(subtotal());
+  const ok = window.confirm(
+    '即将创建真实订单\n\n' +
+    '门店：' + store().name + '\n' +
+    '商品：' + itemCount() + ' 件\n' +
+    '应付：' + total + '（含配送与打包费）\n' +
+    '地址：' + (state.storeAddr || DATA.address) + '\n\n' +
+    '创建订单不会自动扣款，但需要你在支付截止前扫码付款。确认创建？');
+  if (!ok) return;
+  state.ordering = true; render();
+  try {
+    const body = cartPayload();
+    const res = await fetch(API + '/order/create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '下单失败');
+    state.order = data.order;
+    state.quote = null;
+    state.cart = [];
+    save();
+    toast('订单已创建，等待付款');
+  } catch (err) {
+    toast('下单失败：' + err.message);
+  }
+  state.ordering = false; render();
+}
+async function doCancelOrder(orderId){
+  if (!orderId) return;
+  if (!window.confirm('确认取消这个订单？取消后无法恢复。')) return;
+  try {
+    const res = await fetch(API + '/order/cancel', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, cancelReasonCode: 1 })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '取消失败');
+    state.order = null; state.quote = null;
+    toast('订单已取消');
+  } catch (err) {
+    toast('取消失败：' + err.message);
+  }
+  render();
+}
+
 function viewCart(){
   const sub = subtotal();
   return `<section class="panel sec">
@@ -1061,17 +1402,18 @@ function viewCart(){
 }
 function viewPreview(){
   const sub = subtotal(), gd = groupDiscount(sub), pay = Math.round(sub * gd.rate), total = budgetTotal();
+  const q = state.quote;
   return `<section class="panel" style="overflow:hidden">
     <div class="preview-hd">
-      <div class="kicker">订单预览 · 未提交</div>
+      <div class="kicker">订单预览</div>
       <h2>${itemCount()} 件，预估 ${yuan2(pay)}</h2>
-      <p class="hint">这是本地预览。确认按钮不创建真实订单，也不会触发支付。</p>
+      <p class="hint">先向麦当劳结算接口试算真实价格，确认后再创建订单。创建订单不会自动扣款，支付由本人扫码完成。</p>
     </div>
     <div class="sec">
       <div class="kv">
-        <div><span>配送地址</span><b>${esc(DATA.address)}</b></div>
+        <div><span>配送地址</span><b>${esc(state.storeAddr || DATA.address)}</b></div>
         <div><span>门店</span><b>${esc(store().name)}（${esc(store().code)}）</b></div>
-        <div><span>点餐方式</span><b>${groupMode() ? '企业团餐 · 保鲜速达（预估）' : '麦乐送'}</b></div>
+        <div><span>点餐方式</span><b>${groupMode() ? '企业团餐 · 保鲜速达' : '麦乐送'}</b></div>
         <div><span>人数 / 预算</span><b>${state.people} 人 · ${state.budgetMode==='per'?'人均':'总额'} ${yuan(total)}</b></div>
         <div><span>偏好</span><b>${[state.prefs.save&&'省钱',state.prefs.nutri&&'营养',state.prefs.share&&'分餐',state.prefs.spice&&'辣'].filter(Boolean).join(' · ') || '未设置'}</b></div>
       </div>
@@ -1081,16 +1423,57 @@ function viewPreview(){
       ${cartLines()}
       ${state.cart.length ? billHTML() : `<div class="empty"><b>还没有商品</b>先去菜单选几样。</div>`}
     </div>
+    ${q ? quoteBlock(q) : ''}
     <div class="sec">
       <div class="lbl">整单备注</div>
       <textarea id="noteInput" rows="2" placeholder="例如：分餐标注姓名；不要餐具" maxlength="50" style="width:100%;border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;resize:vertical">${esc(state.note)}</textarea>
       <div class="confirmbar">
-        <button class="btn block" disabled>确认下单（本版未开放）</button>
-        <button class="btn ghost block" data-nav="menu">返回继续选餐</button>
+        ${state.order
+          ? orderBlock(state.order)
+          : `${state.quote ? `<button class="btn block" id="createOrderBtn" ${state.ordering ? 'disabled' : ''}>确认下单 · 应付 ${yuan2((state.quote.data || {}).price || 0)}</button>` : ''}
+             <button class="btn ${state.quote ? 'ghost' : ''} block" id="quoteBtn" ${state.cart.length && live.online && !state.ordering ? '' : 'disabled'}>${state.ordering ? '处理中…' : state.quote ? '重新试算价格' : '向麦当劳结算接口试算价格'}</button>
+             ${state.quote ? '<button class="btn ghost block" data-nav="menu">返回继续选餐</button>' : ''}`}
       </div>
-      <div class="notebox">要真正下单，需要在服务端用麦当劳 MCP 走 calculate-price → create-order，并把支付链接交给本人扫码。当前快照页面不含任何下单或支付能力。</div>
+      ${!live.online ? `<div class="warnbox">本地代理未启动，无法试算与下单。请先运行 <b>python3 tools/mcd-server.py</b>，再打开 http://127.0.0.1:8777/。</div>` : ''}
+      <div class="notebox">下单链路：calculate-price 试算 → create-order 建单 → 支付链接本人扫码。代理只转发 MCP 的只读与下单接口，不存储支付信息。</div>
     </div>
   </section>`;
+}
+
+/* Real price returned by calculate-price, including delivery and packing. */
+function quoteBlock(q){
+  const d = q.data || {};
+  const rows = (d.productList || []).map((p) => `<div><span>${esc(p.productName)} × ${p.quantity}</span><b class="num">${yuan2(p.subtotal)}</b></div>`).join('');
+  return `<div class="sec">
+    <div class="sec-head"><div><h2>接口试算结果</h2><p>来自 calculate-price，与菜单价不同：含配送费与打包费</p></div><span class="pill green">实时</span></div>
+    <div class="bill">
+      ${rows}
+      <div><span>配送费</span><b class="num">${yuan2(d.deliveryPrice || 0)}</b></div>
+      <div><span>打包费</span><b class="num">${yuan2(d.packingPrice || 0)}</b></div>
+      ${d.discount ? `<div><span>优惠</span><b class="num">−${yuan2(d.discount)}</b></div>` : ''}
+      <div class="total"><span>应付</span><b class="num">${yuan2(d.price || 0)}</b></div>
+    </div>
+  </div>`;
+}
+
+/* Created order: payment link and expiry, plus the option to cancel.
+   The proxy wraps the MCP payload as {beCode, orderType, data}. */
+function orderBlock(o){
+  const payload = (o && o.data) || o || {};
+  const d = payload.orderDetail || payload;
+  const orderId = d.orderId || payload.orderId || '';
+  const payUrl = payload.payH5Url || d.payH5Url || '';
+  return `<div class="orderbox">
+    <div class="orderbox-hd"><b>订单已创建 · 待支付</b><span class="pill yellow">${esc(d.orderStatus || '待支付')}</span></div>
+    <div class="kv">
+      <div><span>订单号</span><b class="num">${esc(orderId)}</b></div>
+      <div><span>应付金额</span><b class="num">${yuan2(Math.round(Number(d.realTotalAmount || d.totalAmount || 0) * 100))}</b></div>
+      <div><span>创建时间</span><b>${esc(d.createTime || '')}</b></div>
+      ${d.expirePayTime ? `<div><span>支付截止</span><b>${esc(d.expirePayTime)}</b></div>` : ''}
+    </div>
+    ${payUrl ? `<a class="btn block" style="display:block;text-align:center;margin-top:12px;text-decoration:none" href="${esc(payUrl)}" target="_blank" rel="noopener">打开支付页面（扫码付款）</a>` : ''}
+    <button class="btn ghost block" id="cancelOrderBtn" data-order-id="${esc(orderId)}" style="margin-top:9px">取消这个订单</button>
+  </div>`;
 }
 
 /* ---------------------------- detail sheet ---------------------------- */
@@ -1134,6 +1517,7 @@ function fetchDetail(code){
 }
 /* Resolve whether an item needs spec selection; unknown combos are checked
    against the live detail endpoint once and then cached. */
+let detailToken = 0;
 function resolveCombo(code, item){
   if (COMBO.has(code)) return Promise.resolve(true);
   if (live.details[state.storeCode + ':' + code]) {
@@ -1151,6 +1535,219 @@ function resolveCombo(code, item){
     return isCombo;
   });
 }
+/* ---------------- 配餐方案：按人数 + 预算生成可落地清单 ----------------
+   数据来源：当前门店 / 当前渠道的实时菜单（离线时用快照）。
+   两类商品不进入方案：
+     1) 需逐项选规格的套餐 —— 实时菜单不返回 combo 字段，按跨店一致的
+        套餐名称黑名单 + 详情快照里的 combo 编码双重判定；
+     2) 不参与团餐优惠、或与忌口冲突、或属于周边的商品。
+   金额是菜单价估算，团餐折扣为按当前门店促销档位的预估值。 */
+
+/* 套餐名称黑名单：来自 query-meal-detail 返回的 rounds（组合/轮次），
+   跨门店一致，因此实时菜单缺少 combo 字段时也能可靠排除。 */
+const COMBO_NAMES = new Set(["10块蜜烤风味肉骨鸡架盒", "“堡”你欢乐套餐", "“我就喜欢”鸡薯双全盒", "“苹”水相“鱼”套餐", "“苹板”支撑Pro套餐", "“辣”么快乐套餐", "不素之霸薯翅四件套", "全明星双人分享餐8件套(多款主食任选)", "加牛欢享四人餐", "双层吉士汉堡套餐", "双层深海鳕鱼堡", "双层深海鳕鱼堡套餐", "双层鳕鱼堡四件套", "吃鸡盛宴四人餐", "合家欢聚鸡牛三人餐", "吉士汉堡套餐", "四拼小食餐", "培根安格斯厚牛堡四件套", "培根安格斯厚牛堡套餐", "培根蔬萃双层牛堡套餐", "培根蔬萃双层牛堡薯翅四件套", "堡堡随心拼(7件任选)(麦金卡免配)", "大吉大利吃鸡双人餐", "大堡口福四件套（Hold不住鸡排堡）", "大堡口福四件套（不素之霸）", "大堡口福四件套（双层脆鸡堡）", "大堡口福四件套（德克萨斯风味三层肉霸堡）", "巨无霸套餐", "心形薯饼5块", "快乐吃鸡双人餐", "板烧鸡腿堡套餐", "枫糖风味厚松饼猪柳堡三件套", "枫糖风味厚松饼猪柳蛋堡三件套", "枫糖风味厚松饼猪柳蛋堡单人餐（麦金卡免配）", "汉堡开心乐园餐", "牛气满满套餐", "畅享吃鸡三人餐", "精选单人餐四件套", "经典安格斯单人餐（麦金卡免配）", "经典小食2件(麦金卡专享)", "芝士安格斯厚牛堡四件套", "芝士安格斯厚牛堡套餐", "薄皮V翅十翅桶", "薄皮V翅混拼十翅可乐餐", "薯薯双全", "薯薯成双", "蘸蘸炸鸡", "蘸酱韩式甜辣酱鸡块", "蘸酱麦麦脆汁鸡", "超级翅桶", "酥酥多笋卷套餐", "韩式甜辣酱鸡块8块", "鱼排堡开心乐园餐", "鱼牛汉堡随心选单人餐（麦金卡免配）", "鸡牛堡堡双人餐", "鸡肉汉堡随心选单人餐（麦金卡免配）", "麦乐鸡(5块)套餐", "麦乐鸡开心乐园餐", "麦咖啡冰爽一夏", "麦辣鸡翅(4块)套餐", "麦辣鸡腿汉堡套餐", "麦香鱼套餐", "麦香鱼薯翅四件套", "麦香鸡套餐", "麦麦炸鸡5拼", "麦麦脆汁鸡1块", "龙焰芝士棒鸡腿堡单人餐（麦金卡免配）", "龙焰芝士棒鸡腿堡四件套", "龙焰鸡腿堡单人餐（麦金卡免配）", "龙焰鸡腿堡四件套"]);
+
+function planIsCombo(item){
+  if ((item.combo && item.combo.isCombo)) return true;
+  if (COMBO_NAMES.has(item.name)) return true;
+  if (COMBO.has(item.code)) return true;
+  if (COMBO_HINT.test(item.name || '')) return true;
+  return false;
+}
+function planRole(item, cat){
+  const c = String(cat || '');
+  if (/饮品|咖啡/.test(c)) return 'drink';
+  if (/小食|甜品/.test(c)) return 'snack';
+  if (/主食/.test(c)) return 'main';
+  const n = item.name || '';
+  if (/可乐|雪碧|芬达|红茶|绿茶|奶茶|咖啡|果汁|柠檬|气泡|纯悦/.test(n)) return 'drink';
+  if (/堡|卷|饭|面|三明治|巨无霸|双层|麦香鸡|麦香鱼|肉霸堡|鳕鱼/.test(n)) return 'main';
+  if (/薯|鸡|翅|派|麦旋风|沙拉|苹果|玉米|奶昔|蛋挞|脆卜卜|粒/.test(n)) return 'snack';
+  return null;
+}
+function planEligible(item){
+  if (!item || !item.price) return false;
+  if (GOODS.test(item.name)) return false;          // 周边不是餐品
+  if (blocked(item)) return false;                   // 忌口直接排除
+  if (item.promoExcluded) return false;              // 不参与优惠，不进方案
+  if (planIsCombo(item)) return false;               // 需选规格的套餐不进方案
+  return true;
+}
+function planPools(){
+  const pools = { main: [], snack: [], drink: [] };
+  allItems().forEach((i) => {
+    if (!planEligible(i)) return;
+    const r = planRole(i, i.cat);
+    if (r) pools[r].push(i);
+  });
+  Object.keys(pools).forEach((k) => pools[k].sort((a, b) => a.price - b.price));
+  return pools;
+}
+function planBest(pool){ return pool.slice().sort((a, b) => score(b) - score(a))[0] || null; }
+function planQuote(lines){
+  const sub = lines.reduce((s, l) => s + l.i.price * l.n, 0);
+  const gd = groupDiscount(sub);
+  const pay = Math.round(sub * gd.rate);
+  const budget = budgetTotal();
+  return { sub, pay, gd, budget, diff: budget - pay, over: pay > budget };
+}
+/* 最省的一人份：最便宜主食 + 最便宜饮品 */
+function planCheapestHead(P){
+  const m = P.main[0], d = P.drink[0];
+  if (!m || !d) return null;
+  return { main: m, drink: d, per: m.price + d.price };
+}
+function planSteps(t){
+  const P = planPools();
+  const mainL = t.lines.find((l) => planRole(l.i, l.i.cat) === 'main');
+  const drinkL = t.lines.find((l) => planRole(l.i, l.i.cat) === 'drink');
+  const snackL = t.lines.find((l) => planRole(l.i, l.i.cat) === 'snack');
+  const seq = [t.lines.slice()];
+  if (snackL && snackL.n > 1) {
+    seq.push(t.lines.map((l) => l === snackL ? Object.assign({}, l, { n: Math.max(1, Math.floor(l.n / 2)) }) : l));
+  }
+  if (snackL) seq.push(t.lines.filter((l) => l !== snackL));
+  if (mainL) {
+    seq.push([
+      { i: P.main[0], n: Math.min(mainL.n, state.people) },
+      { i: P.drink[0], n: Math.min(drinkL ? drinkL.n : state.people, state.people) }
+    ].filter((l) => l && l.i));
+  }
+  return seq;
+}
+function buildPlans(){
+  const N = state.people;
+  const P = planPools();
+  if (!P.main.length || !P.drink.length) return { plans: [], conflict: null, cheapest: null };
+  const mainCheap = P.main[0], mainBest = planBest(P.main);
+  const drinkCheap = P.drink[0], drinkBest = planBest(P.drink);
+  const snackBest = planBest(P.snack);
+  const share = Math.max(1, Math.ceil(N / 4));
+  const cheapest = planCheapestHead(P);
+  const budget = budgetTotal();
+  /* 冲突说人话：预算连最省配置都罩不住全部人数时，直接讲清差多少 */
+  let conflict = null;
+  if (cheapest && cheapest.per * N > budget) {
+    const covered = Math.max(1, Math.floor(budget / cheapest.per));
+    conflict = { perHead: cheapest.per, covered, gap: N - covered, need: cheapest.per * N - budget };
+  }
+  const tpl = [
+    { id: 'A', title: '省预算 · 每人一份', tag: '最省',
+      note: '主食与饮品都取当前菜单里单价最低的单品。',
+      lines: [{ i: mainCheap, n: N }, { i: drinkCheap, n: N }] },
+    { id: 'B', title: '均衡 · 主食 + 饮品 + 分享小食', tag: '推荐',
+      note: '主食饮品按你的偏好挑，小食按人数四舍五入分享。',
+      lines: [{ i: mainBest, n: N }, { i: drinkBest, n: N }].concat(snackBest ? [{ i: snackBest, n: share }] : []) },
+    { id: 'C', title: '聚餐 · 小食加倍、主食减半', tag: '分享',
+      note: '主食吃半份，小食与饮品顶饱，适合边聊边吃。',
+      lines: [{ i: mainBest, n: Math.max(1, Math.ceil(N / 2)) }]
+        .concat(snackBest ? [{ i: snackBest, n: Math.max(2, share * 2) }] : [])
+        .concat([{ i: drinkCheap, n: N }]) }
+  ];
+  const plans = tpl.map((t) => {
+    const steps = planSteps(t);
+    let chosen = null;
+    for (let i = 0; i < steps.length; i++) {
+      const q = planQuote(steps[i]);
+      if (!q.over) { chosen = { lines: steps[i], q, level: i }; break; }
+    }
+    if (!chosen) {
+      const last = steps[steps.length - 1];
+      chosen = { lines: last, q: planQuote(last), level: steps.length - 1, over: true };
+    }
+    return Object.assign({}, t, { lines: chosen.lines, quote: chosen.q, degraded: chosen.level > 0, over: !!chosen.over });
+  });
+  /* 方案 D：预算内最多能覆盖多少人，回答"预算和人数打架" */
+  if (cheapest) {
+    const k = Math.max(1, Math.min(N, Math.floor(budget / cheapest.per)));
+    const lines = [{ i: cheapest.main, n: k }, { i: cheapest.drink, n: k }];
+    plans.push({
+      id: 'D', title: '预算内最多覆盖', tag: '兜底',
+      note: '按最省组合算，你的预算最多能配 ' + k + ' 人份。',
+      lines, quote: planQuote(lines), degraded: false, over: k < N
+    });
+  }
+  return { plans, conflict, cheapest };
+}
+function planCard(p){
+  const q = p.quote;
+  const diffText = q.over ? '超预算 ' + yuan(-q.diff) : '预算内，余 ' + yuan(q.diff);
+  const minNote = q.gd.note ? '<div class="hint" style="margin-top:2px">' + esc(q.gd.note) + '</div>' : '';
+  return `<article class="plan ${q.over ? 'over' : ''}" data-plan="${esc(p.id)}">
+    <div class="hd"><b>方案 ${esc(p.id)} · ${esc(p.title)}</b><span class="pill ${p.id === 'B' ? 'red' : ''}">${esc(p.tag)}</span></div>
+    <p class="note">${esc(p.note)}${p.degraded && !p.over ? ' 已为预算自动降级配置。' : ''}</p>
+    <ul>
+      ${p.lines.map((l) => `<li><span class="n">${esc(l.i.name)}</span><span class="q">×${l.n}</span><span class="p num">${yuan(l.i.price * l.n)}</span></li>`).join('')}
+    </ul>
+    <div class="foot">
+      <div class="sum"><span>合计${groupMode() ? '（含团餐折扣估算）' : ''}</span><b class="num ${q.over ? 'over' : ''}">${yuan(q.pay)}</b></div>
+      <div class="per"><span>人均 ${yuan(Math.round(q.pay / Math.max(1, state.people)))} · 预算 ${yuan(q.budget)}</span><b class="${q.over ? 'bad' : 'ok'}">${diffText}</b></div>
+      ${minNote}
+    </div>
+    <button class="btn" data-planadd="${esc(p.id)}">按此方案加购</button>
+  </article>`;
+}
+/* 只刷方案区，输入框不重建，输数字时不丢焦点 */
+function planBodyHTML(){
+  const r = buildPlans();
+  const N = state.people;
+  const budget = budgetTotal();
+  const per = Math.round(budget / Math.max(1, N));
+  const conflict = r.conflict;
+  return `<div class="plan-sum">${N} 人 · ${state.budgetMode === 'per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal)} · 合计预算 ${yuan(budget)}（人均 ${yuan(per)}）</div>
+    ${conflict ? `<div class="plan-warn"><b>预算和人数打架了</b>按最省的一人份（${esc(r.cheapest.main.name)} + ${esc(r.cheapest.drink.name)}，人均 ${yuan(conflict.perHead)}）算，${N} 人需要 ${yuan(conflict.perHead * N)}，比预算多 ${yuan(conflict.need)}。现在预算最多配 <b>${conflict.covered} 人</b>，差 ${conflict.gap} 人；要么把人均预算提到 ${yuan(conflict.perHead)} 以上，要么减到 ${conflict.covered} 人。</div>` : ''}
+    ${r.plans.length ? `<div class="plan-grid">${r.plans.map(planCard).join('')}</div>`
+      : `<div class="empty"><b>当前菜单算不出配餐方案</b>可用商品不足或全为套餐类，换个门店或渠道再试。</div>`}
+    <p class="plan-note">口径说明：金额为菜单价估算，${groupMode() ? '团餐折扣按当前门店促销档位预估（满 300 / 500 / 1000 / 2000 元分档），' : ''}最终价格以结算接口为准。已排除需逐项选规格的套餐商品、不参与优惠的商品，以及与忌口冲突的商品。</p>`;
+}
+function refreshPlanBody(){
+  const box = byId('planBody');
+  if (box) box.innerHTML = planBodyHTML();
+}
+function viewPlans(){
+  return `<section class="panel sec">
+    <div class="sec-head"><div><h2>按人数和预算配餐</h2><p>方案全部来自当前门店菜单，金额为菜单价估算</p></div><button class="link" data-nav="home">返回首页</button></div>
+    <div class="plan-meta">
+      <div class="stepper"><button data-people="-1" aria-label="减少人数">−</button><input id="planPeople" class="num" type="number" min="1" max="99" value="${state.people}" aria-label="用餐人数"><button data-people="1" aria-label="增加人数">+</button></div>
+      <div class="money" style="max-width:220px"><span class="cur">¥</span><input id="planBudget" class="num" type="number" min="0" step="1" value="${((state.budgetMode === 'per' ? state.budgetPer : state.budgetTotal) / 100).toFixed(0)}" aria-label="预算金额"></div>
+      <span class="seg"><button data-bmode="per" aria-pressed="${state.budgetMode === 'per'}">人均</button><button data-bmode="total" aria-pressed="${state.budgetMode === 'total'}">总额</button></span>
+      <span class="hint">${state.budgetMode === 'per' ? '当前按人均填写' : '当前按总额填写'}</span>
+    </div>
+    <div id="planBody">${planBodyHTML()}</div>
+  </section>`;
+}
+function applyPlan(id){
+  const r = buildPlans();
+  const p = r.plans.find((x) => x.id === id);
+  if (!p) return;
+  p.lines.forEach((l) => { if (l.i) addToCart(l.i.code, [], '', l.n); });
+  save(); syncChrome(); refreshPlanBody();
+  toast('已按方案 ' + id + ' 加入 ' + p.lines.reduce((s, l) => s + l.n, 0) + ' 件');
+}
+
+/* 方案页的加购按钮与输入框（独立委托，不改动既有事件链） */
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-planadd]');
+  if (!t) return;
+  applyPlan(t.dataset.planadd);
+});
+document.addEventListener('input', (e) => {
+  const id = e.target.id;
+  if (id === 'planPeople') {
+    const n = Math.max(1, Math.min(99, Number(e.target.value || 1)));
+    state.people = n;
+    if (state.budgetMode === 'per') state.budgetTotal = state.budgetPer * n;
+    save(); syncChrome(); refreshPlanBody();
+    return;
+  }
+  if (id === 'planBudget') {
+    const val = Math.max(0, Math.round(Number(e.target.value || 0) * 100));
+    if (state.budgetMode === 'per') { state.budgetPer = val; state.budgetTotal = val * state.people; }
+    else { state.budgetTotal = val; state.budgetPer = Math.round(val / Math.max(1, state.people)); }
+    save(); syncChrome(); refreshPlanBody();
+  }
+});
+
 /* 单品定制项在 d.modification；套餐的定制项挂在 round.choices[].modification 上 */
 function collectMods(d){
   const groups = [];
@@ -1175,9 +1772,65 @@ function modLabels(){
   }));
   return out;
 }
+/* The ordering API needs structured modification entries
+   ({code, key, quantity}), not the display labels we show in the cart. */
+function modPayload(){
+  const out = [];
+  sheetState.groups.forEach((g, gi) => g.values.forEach((v) => {
+    if (!sheetState.sel.has(modKey(gi, v.name))) return;
+    const entry = { code: v.code, quantity: v.selectedQuantity || 1 };
+    if (v.selectedKey) entry.key = v.selectedKey;
+    else if (v.unselectedKey) entry.key = v.unselectedKey;
+    out.push(entry);
+  }));
+  return out;
+}
+/* Combo rounds (meal + side + drink) are ordered as separate line items.
+   The ordering API keys rounds by id, not by the round name, and it expects
+   every round of the combo to be present. */
+function roundPayload(){
+  const out = [];
+  const d = detailData(sheetState.code);
+  if (!d) return out;
+  (d.rounds || []).forEach((r) => {
+    (r.choices || []).forEach((c) => {
+      if (c.isDefault !== 1) return;
+      out.push({ productCode: c.code, quantity: r.quantity || 1, round: String(r.id) });
+    });
+  });
+  return out;
+}
+/* Group round entries by round id for the roundList payload. */
+function roundListPayload(){
+  const rounds = roundPayload();
+  if (!rounds.length) return [];
+  const groups = [];
+  rounds.forEach((r) => {
+    let g = groups.find((x) => x.round === r.round);
+    if (!g) { g = { round: r.round, comboItemList: [] }; groups.push(g); }
+    g.comboItemList.push({ code: r.productCode, quantity: r.quantity });
+  });
+  return groups;
+}
 function openDetail(code){
   const item = findItem(code); if (!item) return;
   const d = detailData(code);
+  if (!d && live.online) {
+    /* Detail not cached yet: fetch it, then paint the sheet with real rounds.
+       The token guards against the user navigating away mid-request, which
+       would otherwise drop a modal on top of an unrelated page. */
+    const token = ++detailToken;
+    byId('sheetTitle').textContent = item.name;
+    byId('sheetBody').innerHTML = '<div class="empty">正在读取套餐组成与定制项…</div>';
+    byId('sheetFoot').innerHTML = '';
+    byId('scrim').classList.add('on'); byId('sheet').classList.add('on');
+    fetchDetail(code).then(() => {
+      if (token !== detailToken) return;
+      if (state.view !== 'menu' && state.view !== 'home') { closeSheet(); return; }
+      openDetail(code);
+    });
+    return;
+  }
   const rounds = (d && d.rounds) || [];
   const groups = d ? collectMods(d) : [];
   const sel = new Set();
@@ -1243,15 +1896,23 @@ function sheetPrice(){
 function closeSheet(){ byId('scrim').classList.remove('on'); byId('sheet').classList.remove('on'); }
 
 /* ---------------------------- cart ops ---------------------------- */
-function addToCart(code, mods, note, qty, unitPrice){
+/* Cart lines keep both a human-readable label list and the structured
+   modification entries the ordering API expects. */
+function addToCart(code, mods, note, qty, unitPrice, structured, roundGroups){
   const item = findItem(code); if (!item) return;
   const list = (mods || []).slice();
-  const keyOf = (arr) => arr.slice().sort().join('|');
-  const k = keyOf(list);
+  const struct = (structured || []).slice();
+  const rounds = (roundGroups || []).slice();
+  const keyOf = (arr) => arr.map((m) => (typeof m === 'string' ? m : (m.code || '') + ':' + (m.key || ''))).sort().join('|');
+  const k = keyOf(struct.length ? struct : list);
   const price = unitPrice == null ? item.price : unitPrice;
-  const existing = state.cart.find((l) => l.code === code && keyOf(l.mods || []) === k && (l.note||'') === (note||''));
+  const existing = state.cart.find((l) => l.code === code && keyOf(l.struct || []) === k && (l.note||'') === (note||''));
   if (existing) existing.qty += (qty || 1);
-  else state.cart.push({code, name:item.name, price, image:item.image, mods:list, note:note||'', qty:qty||1});
+  else state.cart.push({
+    code, name:item.name, price, image:item.image,
+    mods:list, struct:struct, roundGroups:rounds,
+    note:note||'', qty:qty||1
+  });
   save(); syncChrome(); toast('已加入 · ' + item.name);
 }
 function changeLine(idx, delta){
@@ -1268,6 +1929,7 @@ function syncChrome(){
   byId('railCart').textContent = c;
   const bot = byId('botCount');
   bot.textContent = c; bot.hidden = !c;
+  syncAddrChip();
   const sub = subtotal(), gd = groupDiscount(sub), pay = Math.round(sub * gd.rate), total = budgetTotal();
   byId('railUsed').textContent = yuan(Math.round(pay));
   byId('railBudget').textContent = '/ ' + yuan(total);
@@ -1281,11 +1943,34 @@ function syncChrome(){
 }
 function render(){
   const v = state.view;
-  byId('view').innerHTML = v === 'home' ? viewHome() : v === 'menu' ? viewMenu() : v === 'stores' ? viewStores() : v === 'prefs' ? viewPrefs() : v === 'cart' ? viewCart() : viewPreview();
+  /* Replacing #view destroys any focused input. Remember which field and
+     where the caret was, then restore both — otherwise the user loses the
+     caret on every re-render. */
+  const act = document.activeElement;
+  const keepId = act && act.id && byId('view').contains(act) ? act.id : '';
+  const keepStart = keepId && 'selectionStart' in act ? act.selectionStart : null;
+  const keepEnd = keepId && 'selectionEnd' in act ? act.selectionEnd : null;
+  byId('view').innerHTML = v === 'home' ? viewHome() : v === 'menu' ? viewMenu() : v === 'stores' ? viewStores() : v === 'prefs' ? viewPrefs() : v === 'cart' ? viewCart() : v === 'plans' ? viewPlans() : viewPreview();
   syncChrome();
-  if (v === 'menu') { const s = byId('searchInput'); if (s && state.search) s.focus(); }
+  if (keepId) {
+    const el = byId(keepId);
+    if (el && el.focus) {
+      el.focus();
+      if (keepStart != null && el.setSelectionRange) {
+        try { el.setSelectionRange(keepStart, keepEnd); } catch (err) {}
+      }
+    }
+  }
 }
-function go(view){ state.view = view; window.scrollTo({top:0,behavior:'auto'}); render(); }
+function go(view){
+  state.view = view;
+  /* Leaving the page closes any open overlay so nothing is stranded. */
+  detailToken++;
+  closeSheet();
+  closePicker();
+  window.scrollTo({top:0,behavior:'auto'});
+  render();
+}
 let toastTimer;
 function toast(msg){
   const t = byId('toast'); t.textContent = msg; t.classList.add('on');
@@ -1308,9 +1993,31 @@ document.addEventListener('click', (e) => {
     if (next !== state.channel) {
       state.channel = next; state.category = '__all__';
       state.cart = []; save(); render();
-      toast(next === '6' ? '已切换到企业团餐（满 ¥300 起送）' : '已切换到麦乐送');
+      toast(next === '6' ? '已切换到企业团餐（满 ¥300 起送）'
+          : next === '1' ? '已切换到到店取餐（门市价，与官方小程序一致）'
+          : '已切换到麦乐送（外送价）');
       loadMenu(state.storeCode, next);
     }
+    return;
+  }
+  if (t.id === 'budgetSubmit') {
+    /* Budget only takes effect here. Empty input clears it, so an unfilled
+       field means "no budget filtering" instead of a budget of zero. */
+    const raw = (state.budgetDraft || '').trim();
+    if (!raw) {
+      state.budgetCommitted = false;
+      state.budgetPer = 0; state.budgetTotal = 0;
+      save(); render();
+      toast('已清空预算：不按预算筛选');
+      return;
+    }
+    const val = Math.max(0, Math.round(Number(raw) * 100));
+    if (!isFinite(val) || val <= 0) { toast('请输入大于 0 的金额'); return; }
+    if (state.budgetMode === 'per') { state.budgetPer = val; state.budgetTotal = val * state.people; }
+    else state.budgetTotal = val;
+    state.budgetCommitted = true;
+    save(); render();
+    toast('预算已提交，按预算推荐套餐');
     return;
   }
   if (t.dataset.people) {
@@ -1332,17 +2039,33 @@ document.addEventListener('click', (e) => {
   if (t.dataset.open) { openDetail(t.dataset.open); return; }
   if (t.dataset.add) {
     const code = t.dataset.add;
+    const item = findItem(code);
     if (COMBO.has(code)) { openDetail(code); return; }
-    addToCart(code, [], '', 1); render(); return;
+    /* Unknown combo status: ask the live detail endpoint before adding
+       straight to the cart, otherwise a combo would skip spec selection. */
+    resolveCombo(code, item).then((isCombo) => {
+      if (isCombo) openDetail(code);
+      else { addToCart(code, [], '', 1); render(); }
+    });
+    return;
   }
   if (t.dataset.inc) {
     const code = t.dataset.inc;
+    const item = findItem(code);
     if (COMBO.has(code)) {
       const line = [...state.cart].reverse().find((l) => l.code === code);
       if (!line) { openDetail(code); return; }
       line.qty += 1; save(); render(); return;
     }
-    addToCart(code, [], '', 1); render(); return;
+    resolveCombo(code, item).then((isCombo) => {
+      if (isCombo) {
+        const line = [...state.cart].reverse().find((l) => l.code === code);
+        if (!line) { openDetail(code); return; }
+        line.qty += 1; save(); render(); return;
+      }
+      addToCart(code, [], '', 1); render();
+    });
+    return;
   }
   if (t.dataset.dec) {
     const code = t.dataset.dec;
@@ -1374,12 +2097,12 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const id = e.target.id;
   if (id === 'budgetInput') {
-    const val = Math.max(0, Math.round(Number(e.target.value || 0) * 100));
-    if (state.budgetMode === 'per') { state.budgetPer = val; state.budgetTotal = val * state.people; }
-    else state.budgetTotal = val;
-    save(); syncChrome();
+    /* Only the draft changes here. The effective budget (and therefore the
+       recommendation) stays untouched until 「提交」 is pressed. */
+    state.budgetDraft = e.target.value;
+    save();
     const lbl = byId('budgetSummary');
-    if (lbl) lbl.textContent = '当前：' + (state.budgetMode === 'per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal)) + ' · 合计 ' + yuan(budgetTotal()) + (state.people > 1 ? '（' + state.people + ' 人）' : '');
+    if (lbl && !state.budgetCommitted) lbl.textContent = '未提交预算：不按预算筛选，优先按优惠套餐与忌口推荐。';
     return;
   }
   if (id === 'peopleInput') {
@@ -1388,17 +2111,17 @@ document.addEventListener('input', (e) => {
     if (state.budgetMode === 'per') state.budgetTotal = state.budgetPer * n;
     save(); syncChrome();
     const hint = byId('budgetSummary');
-    if (hint) hint.textContent = '当前：' + (state.budgetMode === 'per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal)) + ' · 合计 ' + yuan(budgetTotal()) + (n > 1 ? '（' + n + ' 人）' : '');
+    if (hint) hint.textContent = budgetSummaryText();
     return;
   }
-  if (id === 'searchInput') { state.search = e.target.value; render(); return; }
+  if (id === 'searchInput') { state.search = e.target.value; if (!e.isComposing) renderMenuResults(); return; }
   if (id === 'pickSearch') {
     state.pickQuery = e.target.value;
     renderPickList();
     if (state.pickTab === 'nearby') loadPickTab('nearby');
     return;
   }
-  if (id === 'storeSearch') { state.pickQuery = e.target.value; render(); return; }
+  if (id === 'storeSearch') { state.storeQuery = e.target.value; if (!e.isComposing) renderStoreResults(); return; }
   if (id === 'kcalInput') { state.kcalMax = e.target.value; save(); return; }
   if (id === 'prefPer') {
     state.budgetPer = Math.max(0, Math.round(Number(e.target.value || 0) * 100));
@@ -1416,11 +2139,29 @@ document.addEventListener('input', (e) => {
   if (id === 'noteInput') { state.note = e.target.value; save(); return; }
 });
 
+/* Chinese IME: while a candidate word is being composed the input event
+   carries half-finished text. Repainting mid-composition would destroy the
+   candidate window, so the final text is applied once composition ends. */
+document.addEventListener('compositionend', (e) => {
+  const id = e.target.id;
+  if (id === 'searchInput') { state.search = e.target.value; renderMenuResults(); return; }
+  if (id === 'storeSearch') { state.storeQuery = e.target.value; renderStoreResults(); return; }
+  if (id === 'pickSearch') {
+    state.pickQuery = e.target.value;
+    renderPickList();
+    if (state.pickTab === 'nearby') loadPickTab('nearby');
+  }
+});
+
 document.addEventListener('click', (e) => {
   if (e.target.id === 'sheetAdd') {
-    addToCart(sheetState.code, modLabels(), sheetState.note, sheetState.qty, sheetPrice());
+    addToCart(sheetState.code, modLabels(), sheetState.note, sheetState.qty, sheetPrice(),
+              modPayload(), roundListPayload());
     closeSheet(); go('cart');
   }
+  if (e.target.id === 'quoteBtn') { doQuote(); return; }
+  if (e.target.id === 'createOrderBtn') { doCreateOrder(); return; }
+  if (e.target.id === 'cancelOrderBtn') { doCancelOrder(e.target.dataset.orderId); return; }
 });
 
 byId('sheetClose').addEventListener('click', closeSheet);
@@ -1446,28 +2187,43 @@ document.addEventListener('click', (e) => { if (e.target.id === 'resetBtn') {
 function boot(){
   render();
   syncAddrChip();
+  /* The proxy check decides online vs snapshot mode on its own. The store
+     directory is loaded separately: it is slow when cold, and a failure
+     there must not knock the page back into offline mode. */
   api('/health')
     .then(() => {
       live.online = true;
       const stamp = byId('snapStamp');
-      if (stamp) stamp.textContent = '实时（本地代理 · ' + new Date().toLocaleTimeString('zh-CN', {hour12:false}) + '）';
+      if (stamp) stamp.textContent = '实时接口（本地代理 · ' + new Date().toLocaleTimeString('zh-CN', {hour12:false}) + '）';
       const note = byId('dataNote');
-      if (note) note.textContent = '数据来自麦当劳 MCP 实时接口，经本地只读代理转发。价格以结算接口为准，本页不建单、不支付。';
-      return fetchOnce('browse', '/stores?mode=browse');
-    })
-    .then((data) => {
-      live.stores = data.stores || [];
-      live.storeRows = live.stores;
-      live.pickCache.all = live.stores;
-      render();
+      if (note) note.setAttribute('title', '门店与菜单通过 tools/mcd-server.py 实时转发麦当劳 MCP');
       loadMenu(state.storeCode, state.channel);
+      /* Delivery address comes from the account, so delivery can be priced. */
+      fetchOnce('addresses', '/addresses')
+        .then((data) => {
+          const list = data.addresses || [];
+          if (!list.length) return;
+          const match = list.find((a) => (a.fullAddress || '').includes('京东MALL')) || list[0];
+          state.addressId = match.addressId;
+          state.storeAddr = match.fullAddress;
+          save(); render();
+        })
+        .catch(() => {});
+      fetchOnce('browse', '/stores?mode=browse')
+        .then((data) => {
+          live.stores = data.stores || [];
+          live.storeRows = live.stores;
+          live.pickCache.all = live.stores;
+          try { render(); } catch (err) { console.error('[render]', err); }
+        })
+        .catch(() => { /* keep the snapshot list; the picker still works */ });
     })
     .catch(() => {
       live.online = false;
       const note = byId('dataNote');
-      if (note) note.textContent = '本地代理未启动，当前为静态快照（' + (DATA.capturedAt || '') + '）。启动 tools/mcd-server.py 可获得实时门店与菜单。';
+      if (note) note.setAttribute('title', '启动 tools/mcd-server.py 可获得实时门店与菜单');
       const stamp = byId('snapStamp');
-      if (stamp) stamp.textContent = '离线快照';
+      if (stamp) stamp.textContent = '离线快照（' + (DATA.capturedAt || '') + '）';
     });
 }
 boot();

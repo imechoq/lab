@@ -1,7 +1,5 @@
 const path = require('path');
 
-// Resolve playwright from the local install if present, else fall back to the
-// global one. Set PLAYWRIGHT_MODULE to override explicitly.
 function loadPlaywright() {
   const candidates = [
     process.env.PLAYWRIGHT_MODULE,
@@ -11,9 +9,7 @@ function loadPlaywright() {
   for (const candidate of candidates) {
     try {
       return require(candidate);
-    } catch (e) {
-      /* try next */
-    }
+    } catch (e) { /* try next */ }
   }
   throw new Error(
     'playwright not found. Install it with:  npm i -D playwright\n' +
@@ -23,10 +19,6 @@ function loadPlaywright() {
 const { chromium } = loadPlaywright();
 
 const APP = path.resolve(__dirname, '..', 'app', 'index.html');
-// file:// cannot fetch relative /api/* URLs, so serve the app over HTTP and
-// point MCD_APP_URL at it for a realistic run:
-//   python3 tools/mcd-server.py --port 8777
-//   MCD_APP_URL=http://127.0.0.1:8777/index.html node tools/test-app.js
 const FILE = process.env.MCD_APP_URL || ('file://' + APP);
 
 (async () => {
