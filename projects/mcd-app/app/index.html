@@ -1,0 +1,1480 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>麦记点单 · 七宝京东MALL</title>
+<meta name="theme-color" content="#DA291C">
+<style>
+:root{
+  --ink:#1a1512; --ink-2:#4a4038; --muted:#837568; --line:#e9dfd1; --line-2:#f2ebdf;
+  --paper:#fbf6ee; --card:#fffdfa; --red:#da291c; --red-dark:#a81c12; --red-soft:#fdeeea;
+  --yellow:#ffc72c; --yellow-soft:#fff6da; --green:#1f7a4d; --green-soft:#e9f5ee;
+  --shadow:0 2px 4px rgba(26,21,18,.04),0 14px 34px -18px rgba(26,21,18,.28);
+  --r:16px; --r-sm:11px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased; padding-bottom:78px;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer}
+h1,h2,h3,h4,p{margin:0}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:where(button,a,input,select,textarea):focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+/* ---------- shell ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+.topbar{position:sticky;top:0;z-index:40;background:rgba(251,246,238,.92);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
+.topbar-in{display:flex;align-items:center;gap:12px;min-height:62px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.02em;font-size:17px;white-space:nowrap}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--red);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:900;letter-spacing:-.05em}
+.address{display:flex;align-items:center;gap:6px;min-width:0;color:var(--ink-2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.address b{font-weight:700}
+.spacer{flex:1}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap;flex:none}
+.icon-btn:hover{border-color:#d9c9b4}
+.cart-btn{background:var(--ink);color:#fff;border-color:var(--ink)}
+.cart-btn .count{min-width:20px;height:20px;border-radius:999px;background:var(--yellow);color:#231a00;font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
+.icon-btn .ico{display:none;font-size:14px;line-height:1}
+
+/* ---------- store picker: expand in place, never jump the page ---------- */
+.topbar-wrap{position:relative}
+.address{gap:7px;text-align:left;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;transition:border-color .16s,box-shadow .16s}
+.address:hover{border-color:#d9c9b4}
+.address[aria-expanded="true"]{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+.address .pin{font-size:13px;flex:none}
+.address .lbl{min-width:0;display:grid;gap:1px}
+.address .lbl b{font-weight:750;font-size:13px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.address .lbl span{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.address .caret{font-size:9px;color:var(--muted);flex:none;transition:transform .2s}
+.address[aria-expanded="true"] .caret{transform:rotate(180deg)}
+.pick-scrim{position:fixed;inset:0;background:rgba(24,18,12,.3);z-index:55;opacity:0;pointer-events:none;transition:opacity .2s}
+.pick-scrim.on{opacity:1;pointer-events:auto}
+.pick{position:absolute;z-index:58;left:0;top:calc(100% + 8px);width:min(430px,calc(100vw - 32px));background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:0 20px 46px -16px rgba(40,26,14,.36);overflow:hidden;opacity:0;transform:translateY(-8px) scale(.985);pointer-events:none;transition:opacity .18s,transform .18s}
+.pick.on{opacity:1;transform:none;pointer-events:auto}
+.pick-head{padding:12px 13px 10px;border-bottom:1px solid var(--line-2);display:grid;gap:9px}
+.pick-head .search{height:38px}
+.pick-head .search input{font-size:13.5px}
+.pick-tabs{display:flex;gap:5px}
+.pick-tabs button{padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:700;color:var(--ink-2)}
+.pick-tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.pick-list{max-height:min(430px,58vh);overflow-y:auto;padding:7px;display:grid;gap:4px;scrollbar-width:thin}
+.pick-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:1px solid transparent;text-align:left;width:100%;transition:background .14s,border-color .14s}
+.pick-row:hover{background:#fdf6ec}
+.pick-row[aria-current="true"]{border-color:var(--red);background:#fffaf7}
+.pick-row .mk{width:8px;height:8px;border-radius:50%;background:#ddd0bd;flex:none}
+.pick-row[aria-current="true"] .mk{background:var(--red)}
+.pick-row .tx{min-width:0;flex:1;display:grid;gap:3px}
+.pick-row .tx b{font-size:13px;font-weight:700;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-row .tx span{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-row .facts{display:flex;gap:5px;flex-wrap:wrap;font-size:10.5px;color:#7d6e5d}
+.pick-row .facts i{font-style:normal;background:#f4ecdf;border-radius:4px;padding:1px 5px}
+.pick-row .facts i.open{background:var(--green-soft);color:var(--green)}
+.pick-row .facts i.shut{background:#f6ecea;color:#9a5a4e}
+.pick-row .go{font-size:11.5px;font-weight:750;color:var(--red);white-space:nowrap;flex:none}
+.pick-empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:12.5px}
+.pick-more{width:100%;padding:11px;border-top:1px solid var(--line-2);background:#fdf8f0;font-size:12.5px;font-weight:750;color:var(--red)}
+.pick-more:hover{background:#fbf1e2}
+@media(max-width:899px){
+  .pick{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;border-radius:18px 18px 0 0;border-bottom:0;transform:translateY(100%);max-height:86vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)}
+  .pick.on{transform:none}
+  .pick-list{max-height:none}
+}
+
+/* ---------- stores page ---------- */
+.stores-top{display:grid;gap:11px;padding:16px 18px;border-bottom:1px solid var(--line-2);background:linear-gradient(160deg,#fff8ea,#fffdfa)}
+.stores-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stores-bar .search{flex:1;min-width:210px;height:40px}
+.sorts{display:flex;gap:5px;flex-wrap:wrap}
+.sorts button{padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:700;color:var(--ink-2)}
+.sorts button[aria-pressed="true"]{background:var(--red-soft);border-color:var(--red);color:var(--red-dark)}
+.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:10px;padding:16px 18px}
+.store-card{border:1px solid var(--line);border-radius:13px;background:#fff;padding:13px;text-align:left;display:grid;gap:7px;transition:border-color .14s,box-shadow .14s}
+.store-card:hover{border-color:#d9c9b4}
+.store-card[data-active="true"]{border-color:var(--red);background:#fffaf7;box-shadow:0 0 0 2px var(--red-soft) inset}
+.store-card .hd{display:flex;justify-content:space-between;gap:9px;align-items:flex-start}
+.store-card .hd b{font-size:13.5px;font-weight:750;letter-spacing:-.01em;line-height:1.35}
+.store-card .addr{font-size:11.5px;color:var(--muted);line-height:1.45}
+.store-card .facts{display:flex;gap:5px;flex-wrap:wrap}
+.store-card .facts i{font-style:normal;font-size:10.5px;padding:2px 6px;border-radius:5px;background:#f4ecdf;color:#6f604f}
+.store-card .facts i.open{background:var(--green-soft);color:var(--green)}
+.store-card .facts i.shut{background:#f6ecea;color:#9a5a4e}
+.store-card .go{font-size:12px;font-weight:750;color:var(--red)}
+.store-card[data-active="true"] .go{color:var(--green)}
+
+/* ---------- layout ---------- */
+.grid-main{display:grid;grid-template-columns:264px minmax(0,1fr);gap:22px;padding:20px 0 40px}
+.grid-main > *{min-width:0}
+main{min-width:0;overflow-x:clip}
+.panel{max-width:100%}
+.rail{position:sticky;top:78px;align-self:start;display:grid;gap:12px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.panel-pad{padding:16px}
+.rail .nav{display:grid;gap:2px;padding:8px}
+.rail .nav button{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;font-weight:650;font-size:14px;color:var(--ink-2);text-align:left}
+.rail .nav button .glyph{width:26px;height:26px;border-radius:8px;background:var(--line-2);display:grid;place-items:center;font-size:13px}
+.rail .nav button[aria-current="true"]{background:var(--ink);color:#fff}
+.rail .nav button[aria-current="true"] .glyph{background:rgba(255,255,255,.14)}
+.rail .nav small{margin-left:auto;font-weight:700;font-size:11px;opacity:.62}
+.meter{padding:14px 16px;border-top:1px solid var(--line-2)}
+.meter-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
+.bar{height:8px;border-radius:99px;background:#efe6d7;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--red);transition:width .28s cubic-bezier(.2,.8,.2,1)}
+.bar i.warn{background:#e08a00}
+.bar i.over{background:#8f1208}
+.meter-figure{display:flex;align-items:baseline;gap:6px;margin-top:10px}
+.meter-figure b{font-size:24px;letter-spacing:-.03em}
+.meter-figure span{font-size:12px;color:var(--muted)}
+
+/* ---------- home ---------- */
+.hero{overflow:hidden;position:relative}
+.hero-top{display:flex;justify-content:space-between;gap:18px;padding:22px 22px 18px;background:
+  radial-gradient(120% 150% at 100% 0%, #ffe9a8 0%, transparent 55%), linear-gradient(160deg,#fff8ea,#fffdfa 60%)}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--red);text-transform:uppercase}
+.hero h1{font-size:clamp(23px,2.5vw,30px);line-height:1.15;letter-spacing:-.035em;margin:7px 0 6px;font-weight:850}
+.hero .meta{font-size:13px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:6px 12px}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:999px;padding:5px 10px;white-space:nowrap;align-self:start}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.channel{display:flex;gap:6px;padding:8px;background:#f4ebdd;border-radius:12px}
+.channel button{flex:1;padding:10px 8px;border-radius:9px;font-weight:750;font-size:13.5px;color:#6c5c4b;display:grid;gap:1px}
+.channel button span{font-size:11px;font-weight:600;opacity:.72}
+.channel button[aria-pressed="true"]{background:#fff;color:var(--red);box-shadow:0 2px 8px rgba(120,80,30,.14)}
+.channel button[aria-pressed="true"] span{opacity:.85}
+.hero-body{display:grid;grid-template-columns:1.15fr .85fr;gap:0;border-top:1px solid var(--line-2)}
+.hero-budget{padding:20px 22px}
+.hero-note{padding:20px 22px;border-left:1px solid var(--line-2);background:#fffdf6}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.lbl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);font-weight:650;margin-bottom:7px}
+.money{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:11px;background:#fff;overflow:hidden}
+.money:focus-within{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+.money .cur{padding:0 4px 0 12px;color:var(--muted);font-weight:650}
+.money input{border:0;flex:1;min-width:0;padding:11px 12px 11px 4px;font-size:16px;font-weight:750;background:transparent}
+.money input::-webkit-outer-spin-button,.money input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.seg{display:inline-flex;padding:3px;background:#f2e9db;border-radius:9px;gap:2px}
+.seg button{padding:5px 10px;border-radius:7px;font-size:12px;font-weight:700;color:#786654}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(60,40,20,.12)}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;background:#fff;overflow:hidden;width:max-content}
+.stepper button{width:40px;height:42px;font-size:19px;font-weight:700;color:var(--ink-2)}
+.stepper button:hover{background:#f7efe2}
+.stepper input{width:52px;height:42px;text-align:center;border:0;font-weight:800;font-size:15px;background:transparent}
+.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:#f4ecdf;color:#6f604f;font-size:11.5px;font-weight:650}
+.pill.red{background:var(--red-soft);color:var(--red-dark)}
+.pill.yellow{background:var(--yellow-soft);color:#8a6400}
+.pill.green{background:var(--green-soft);color:var(--green)}
+
+.sec{padding:18px 20px}
+.sec + .sec{border-top:1px solid var(--line-2)}
+.sec-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.sec-head h2{font-size:17px;letter-spacing:-.02em;font-weight:800}
+.sec-head p{font-size:12px;color:var(--muted);margin-top:3px}
+.link{font-size:12.5px;font-weight:700;color:var(--red)}
+.deal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.deal{border:1px solid var(--line);border-radius:12px;padding:13px;background:linear-gradient(180deg,#fffdf8,#fff)}
+.deal b{display:block;font-size:14px;letter-spacing:-.01em}
+.deal span{display:block;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+.deal .big{font-size:19px;font-weight:850;color:var(--red);letter-spacing:-.02em}
+.hscroll{display:grid;grid-auto-flow:column;grid-auto-columns:168px;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.rec{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;text-align:left}
+.rec .thumb{position:relative;aspect-ratio:1;background:#fbf3e6;display:grid;place-items:center}
+.rec .thumb img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;opacity:0;transition:opacity .3s ease}
+.rec .thumb .ph{font-size:26px;font-weight:900;color:#d9c9b2}
+.rec .body{padding:9px 10px 11px}
+.rec .nm{font-size:12.5px;font-weight:700;line-height:1.3;height:33px;overflow:hidden}
+.rec .pr{margin-top:5px;font-size:13px;font-weight:850;color:var(--red)}
+.rec .pr s{color:var(--muted);font-weight:500;font-size:11px;margin-left:4px}
+.store-list{display:grid;gap:8px}
+.store-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;text-align:left;width:100%}
+.store-row[data-active="true"]{border-color:var(--red);background:#fffaf7;box-shadow:0 0 0 2px var(--red-soft) inset}
+.store-row .dot{width:9px;height:9px;border-radius:50%;background:#d8ccb9;flex:none}
+.store-row[data-active="true"] .dot{background:var(--red)}
+.store-row .txt{min-width:0;flex:1}
+.store-row .txt b{display:block;font-size:13.5px;letter-spacing:-.01em}
+.store-row .txt span{font-size:11.5px;color:var(--muted)}
+.store-row .go{font-size:12px;font-weight:750;color:var(--red);white-space:nowrap}
+.act{display:grid;gap:8px}
+.act-row{display:flex;gap:10px;padding:11px 12px;border-radius:11px;background:var(--yellow-soft);border:1px solid #f6e3ac}
+.act-row .tag{font-size:10.5px;font-weight:800;color:#8a6400;background:#ffe6a1;border-radius:5px;padding:2px 6px;height:max-content}
+.act-row b{font-size:12.8px}
+.act-row p{font-size:11.8px;color:#7a6438;margin-top:2px;line-height:1.45}
+
+/* ---------- menu ---------- */
+.menu-bar{position:sticky;top:62px;z-index:30;background:rgba(251,246,238,.95);backdrop-filter:blur(12px);padding:10px 0 9px;border-bottom:1px solid var(--line)}
+.search{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:0 12px;height:42px}
+.search input{border:0;flex:1;background:transparent;font-size:14px;min-width:0}
+.search input::placeholder{color:#a3968a}
+.cats{display:flex;gap:6px;overflow-x:auto;padding:9px 0 1px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cats button{white-space:nowrap;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.cats button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.filters{display:flex;gap:6px;flex-wrap:wrap;padding-top:8px}
+.chip{padding:5px 10px;border-radius:999px;border:1px dashed #d8c7b1;font-size:11.5px;font-weight:650;color:#6f604f;background:transparent}
+.chip[aria-pressed="true"]{background:var(--red-soft);border-color:var(--red);border-style:solid;color:var(--red-dark)}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:11px}
+.pc{border:1px solid var(--line);border-radius:13px;background:#fff;overflow:hidden;display:flex;flex-direction:column;text-align:left;position:relative}
+.pc .thumb{position:relative;aspect-ratio:1.25;background:linear-gradient(180deg,#fdf6ea,#f8eeda);display:grid;place-items:center;overflow:hidden}
+.pc .thumb img{width:100%;height:100%;object-fit:contain;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s ease;mix-blend-mode:multiply;opacity:0}
+.pc:hover .thumb img{transform:scale(1.045)}
+.pc .thumb .ph{font-size:30px;font-weight:900;color:#dccbb2}
+.pc .badge{position:absolute;left:8px;top:8px;background:var(--red);color:#fff;font-size:10.5px;font-weight:800;border-radius:5px;padding:2px 6px;letter-spacing:.01em}
+.pc .badge.alt{background:#8a6400}
+.pc .body{padding:9px 10px 10px;display:flex;flex-direction:column;gap:5px;flex:1}
+.pc .nm{font-size:13px;font-weight:750;line-height:1.32;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px;letter-spacing:-.01em}
+.pc .tg{display:flex;gap:4px;flex-wrap:wrap}
+.pc .tg i{font-style:normal;font-size:10px;font-weight:650;color:#8a7a68;background:#f6efe3;border-radius:4px;padding:1px 5px}
+.pc .foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:auto}
+.pc .price{font-size:15px;font-weight:850;color:var(--red);letter-spacing:-.02em}
+.pc .price s{font-size:10.5px;color:var(--muted);font-weight:500;margin-left:3px}
+.pc .add{width:29px;height:29px;border-radius:50%;background:var(--red);color:#fff;font-size:17px;font-weight:800;display:grid;place-items:center;line-height:1;flex:none}
+.pc .add:hover{background:var(--red-dark)}
+.pc .add.spec{width:auto;height:27px;border-radius:999px;padding:0 10px;font-size:11px;font-weight:750}
+.pc .qty{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.pc .qty button{width:26px;height:26px;font-weight:800;color:var(--ink-2);font-size:14px}
+.pc .qty span{min-width:18px;text-align:center;font-size:12px;font-weight:800}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px}
+.empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:5px}
+
+/* ---------- sheet / modal ---------- */
+.scrim{position:fixed;inset:0;background:rgba(24,18,12,.42);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:70;left:50%;bottom:0;transform:translate(-50%,110%);width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--card);border-radius:20px 20px 0 0;transition:transform .32s cubic-bezier(.2,.8,.2,1);padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none}
+.sheet.on{transform:translate(-50%,0);visibility:visible;pointer-events:auto}
+@media(min-width:720px){.sheet{bottom:auto;top:50%;border-radius:18px;transform:translate(-50%,-46%) scale(.98);opacity:0;transition:opacity .2s,transform .2s}.sheet.on{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line-2);position:sticky;top:0;background:var(--card);z-index:2}
+.sheet-head b{font-size:15px}
+.x{width:32px;height:32px;border-radius:50%;background:#f4ecdf;font-size:16px;font-weight:700;display:grid;place-items:center}
+.sheet-body{padding:16px 18px}
+.detail-top{display:flex;gap:14px;align-items:flex-start}
+.detail-top .img{width:132px;height:132px;border-radius:14px;background:linear-gradient(180deg,#fdf6ea,#f8eeda);display:grid;place-items:center;flex:none;overflow:hidden}
+.detail-top .img img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;opacity:0;transition:opacity .3s}
+.detail-top h3{font-size:19px;letter-spacing:-.025em;line-height:1.24}
+.detail-top .p{margin-top:8px;font-size:22px;font-weight:850;color:var(--red);letter-spacing:-.03em}
+.detail-top .p s{font-size:12px;color:var(--muted);font-weight:500;margin-left:6px}
+.detail-top .note{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+.round{border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-top:9px}
+.round .rh{display:flex;justify-content:space-between;font-size:12.5px;font-weight:750}
+.round .rh span{font-weight:600;color:var(--muted);font-size:11.5px}
+.round ul{margin:7px 0 0;padding-left:16px;font-size:12.5px;color:var(--ink-2);line-height:1.6;max-height:150px;overflow-y:auto;padding-right:4px}
+.round .def{color:var(--green);font-weight:700;font-size:11px;margin-left:4px}
+.mod-group{margin-top:10px}
+.mod-group .gh{font-size:12px;font-weight:750;display:flex;justify-content:space-between}
+.mod-group .gh span{font-weight:600;color:var(--muted)}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.opt{padding:7px 11px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:650;color:var(--ink-2)}
+.opt[aria-pressed="true"]{border-color:var(--red);background:var(--red-soft);color:var(--red-dark)}
+.nutri{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.nutri div{background:#f7f0e3;border-radius:9px;padding:8px 4px;text-align:center}
+.nutri b{display:block;font-size:13px;letter-spacing:-.02em}
+.nutri span{font-size:10px;color:var(--muted)}
+.sheet-foot{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line-2);padding:12px 18px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center}
+.sheet-foot .sum{flex:1;min-width:0;font-size:12px;color:var(--muted);overflow:hidden}
+.sheet-foot .sum b{display:block;font-size:18px;color:var(--ink);letter-spacing:-.02em}
+.btn{padding:12px 18px;border-radius:11px;font-weight:800;font-size:14px;background:var(--red);color:#fff;white-space:nowrap}
+.btn:hover{background:var(--red-dark)}
+.btn.block{width:100%;display:block;text-align:center}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{background:#ded3c4;color:#8c7d6c;cursor:not-allowed}
+
+/* ---------- cart ---------- */
+.cart-line{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line-2)}
+.cart-line:last-child{border-bottom:0}
+.cart-line .img{width:62px;height:62px;border-radius:10px;background:#f8efe0;flex:none;display:grid;place-items:center;overflow:hidden}
+.cart-line .img img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;opacity:0;transition:opacity .3s}
+.cart-line .mid{flex:1;min-width:0}
+.cart-line .nm{font-size:13.5px;font-weight:750;line-height:1.35}
+.cart-line .sub{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.cart-line .right{text-align:right;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;gap:6px}
+.cart-line .lp{font-size:14px;font-weight:800;letter-spacing:-.02em}
+.qty-s{display:flex;align-items:center;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.qty-s button{width:26px;height:26px;font-weight:800;color:var(--ink-2);font-size:14px}
+.qty-s span{min-width:20px;text-align:center;font-size:12px;font-weight:800}
+.bill{margin-top:12px;border-top:1px dashed #e2d5c1;padding-top:12px;display:grid;gap:7px;font-size:13px}
+.bill div{display:flex;justify-content:space-between;gap:10px}
+.bill div span{color:var(--muted)}
+.bill .total{font-size:15px;font-weight:850;padding-top:6px;border-top:1px solid var(--line-2)}
+.bill .total span{color:var(--ink);font-weight:700}
+.warnbox{margin-top:10px;padding:10px 12px;border-radius:10px;background:#fff4d6;border:1px solid #f3dfa5;font-size:12px;color:#7a5a00;line-height:1.5}
+.notebox{margin-top:10px;padding:10px 12px;border-radius:10px;background:#f6f1e8;font-size:12px;color:#6d5f50;line-height:1.55}
+
+/* ---------- prefs ---------- */
+.pref-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;font-size:13px;font-weight:700}
+.sw{width:40px;height:23px;border-radius:99px;background:#e2d6c6;position:relative;flex:none;transition:background .18s}
+.sw::after{content:"";position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.toggle[aria-pressed="true"]{border-color:var(--red);background:#fffaf7}
+.toggle[aria-pressed="true"] .sw{background:var(--red)}
+.toggle[aria-pressed="true"] .sw::after{transform:translateX(17px)}
+.pref-chips{display:flex;flex-wrap:wrap;gap:7px}
+.pref-chips button{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:650}
+.pref-chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* ---------- preview ---------- */
+.preview-hd{padding:22px;background:linear-gradient(160deg,#fff8ea,#fffdfa);border-bottom:1px solid var(--line-2)}
+.preview-hd h2{font-size:22px;letter-spacing:-.03em;margin-bottom:5px}
+.kv{display:grid;gap:8px;font-size:13px}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid var(--line-2)}
+.kv div:last-child{border:0;padding-bottom:0}
+.kv span{color:var(--muted)}
+.kv b{font-weight:700;text-align:right}
+.confirmbar{margin-top:14px;display:grid;gap:8px}
+.confirmbar .btn:disabled{background:#e7dccd;color:#8f8071}
+
+/* ---------- bottom nav ---------- */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,253,250,.96);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.bottom-in{display:grid;grid-template-columns:repeat(4,1fr);max-width:560px;margin:0 auto}
+.bottom button{padding:9px 4px 10px;display:grid;justify-items:center;gap:3px;font-size:10.5px;font-weight:700;color:#8b7c6b;position:relative}
+.bottom button .g{font-size:17px;line-height:1}
+.bottom button[aria-current="true"]{color:var(--red)}
+.bottom .dotc{position:absolute;top:4px;right:calc(50% - 24px);min-width:16px;height:16px;border-radius:99px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;padding:0 4px}
+.bottom .dotc[hidden]{display:none}
+
+.toast{position:fixed;left:50%;top:72px;transform:translate(-50%,-12px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:650;opacity:0;pointer-events:none;transition:.25s;z-index:55;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media(min-width:900px){
+  body{padding-bottom:24px}
+  .bottom{display:none}
+}
+@media(max-width:899px){
+  .grid-main{grid-template-columns:1fr;padding-top:14px}
+  .rail{display:none}
+  .hero-body{grid-template-columns:1fr}
+  .hero-note{border-left:0;border-top:1px solid var(--line-2)}
+  .menu-bar{top:62px}
+}
+@media(max-width:560px){
+  .wrap{padding:0 12px}
+  .brand span{display:none}
+  .topbar-in{gap:8px;min-height:56px}
+  .address{font-size:12px;max-width:38vw}
+  .icon-btn{padding:8px 10px;font-size:12.5px}
+  .icon-btn .ico{display:inline}
+  .icon-btn .t{display:none}
+  .hero-top{padding:18px 16px 14px;display:block}
+  .status{margin-top:10px}
+  .hero-budget,.hero-note{padding:16px}
+  .sec{padding:15px 15px}
+  .deal-grid{grid-template-columns:1fr}
+  .menu-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .pref-grid{grid-template-columns:1fr}
+  .nutri{grid-template-columns:repeat(5,1fr)}
+  .detail-top .img{width:104px;height:104px}
+  .hscroll{grid-auto-columns:146px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="wrap topbar-in topbar-wrap">
+    <div class="brand"><span class="mark">M</span><span>麦记点单</span></div>
+    <button class="address" id="addrChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="pickPanel">
+      <span class="pin">📍</span>
+      <span class="lbl"><b id="addrName">七宝领展餐厅</b><span id="addrSub">漕宝路3366号 · 麦乐送</span></span>
+      <span class="caret">▼</span>
+    </button>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="switchBtn"><span class="ico">⇄</span><span class="t">换门店</span></button>
+    <button class="icon-btn cart-btn" id="cartBtn"><span class="ico">🛍</span><span class="t">购物车</span><span class="count num" id="cartCount">0</span></button>
+
+    <!-- 就地展开的门店选择器：不跳转、不滚动 -->
+    <div class="pick" id="pickPanel" role="dialog" aria-label="选择门店">
+      <div class="pick-head">
+        <div class="search">🔎<input id="pickSearch" placeholder="搜商圈、地标或门店名" autocomplete="off" aria-label="搜索门店"></div>
+        <div class="pick-tabs" role="group" aria-label="门店范围">
+          <button data-picktab="nearby" aria-pressed="true">附近</button>
+          <button data-picktab="deliver" aria-pressed="false">可配送</button>
+          <button data-picktab="fav" aria-pressed="false">收藏</button>
+          <button data-picktab="all" aria-pressed="false">全部门店</button>
+        </div>
+      </div>
+      <div class="pick-list" id="pickList"></div>
+      <button class="pick-more" id="pickMore">打开完整门店列表 →</button>
+    </div>
+  </div>
+</div>
+<div class="pick-scrim" id="pickScrim"></div>
+
+<div class="wrap">
+  <div class="grid-main">
+    <aside class="rail">
+      <nav class="panel nav" aria-label="主导航">
+        <button data-nav="home" aria-current="true"><span class="glyph">⌂</span>首页</button>
+        <button data-nav="menu"><span class="glyph">☰</span>菜单</button>
+        <button data-nav="stores"><span class="glyph">⌖</span>门店</button>
+        <button data-nav="prefs"><span class="glyph">✦</span>我的偏好</button>
+        <button data-nav="preview"><span class="glyph">✓</span>点单预览<small class="num" id="railCart">0</small></button>
+      </nav>
+      <div class="panel">
+        <div class="panel-pad">
+          <div class="lbl">本次预算 <span id="budgetModeLbl">人均</span></div>
+          <div class="meter-figure"><b class="num" id="railUsed">¥0</b><span id="railBudget">/ ¥0</span></div>
+          <div class="bar" style="margin-top:9px"><i id="railBar" style="width:0%"></i></div>
+          <div class="hint" style="margin-top:8px" id="railHint">还没有选餐</div>
+        </div>
+      </div>
+      <div class="panel" style="padding:12px 14px">
+        <div class="hint">数据来自麦当劳 MCP，只读快照 <b id="snapStamp">—</b>。价格以结算接口为准，本页不建单、不支付。</div>
+      </div>
+    </aside>
+
+    <main id="view"></main>
+  </div>
+</div>
+
+<nav class="bottom" aria-label="底部导航">
+  <div class="bottom-in">
+    <button data-nav="home" aria-current="true"><span class="g">⌂</span>首页</button>
+    <button data-nav="menu"><span class="g">☰</span>菜单</button>
+    <button data-nav="stores"><span class="g">⌖</span>门店</button>
+    <button data-nav="prefs"><span class="g">✦</span>偏好</button>
+    <button data-nav="preview"><span class="g">🛍</span>预览<span class="dotc num" id="botCount" hidden>0</span></button>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-head"><b id="sheetTitle">商品</b><button class="x" id="sheetClose" aria-label="关闭">✕</button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot" id="sheetFoot"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="menu-data.js"></script>
+<script>
+(function(){
+"use strict";
+const DATA = window.MCD_DATA;
+const STORAGE = 'mcd-qibao-app-v1';
+const API = '/api';
+const byId = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yuan = (cents) => '¥' + (cents / 100).toFixed(2).replace(/\.00$/, '');
+const yuan2 = (cents) => '¥' + (cents / 100).toFixed(2);
+
+/* ---------------- live data layer ----------------
+   The MCP server needs a personal Bearer token, so the browser must never
+   talk to it directly. tools/mcd-server.py holds the token and exposes
+   read-only endpoints on localhost. When that proxy is not running the app
+   falls back to the static snapshot so it still renders offline. */
+const live = {
+  online: false,
+  stores: [],        // store directory from /api/stores
+  menus: {},         // cache key `${storeCode}:${beType}` -> menu payload
+  details: {},       // cache key `${storeCode}:${code}` -> detail payload
+  pending: {},       // in-flight requests, deduped
+  loadingStore: null,// store code whose menu is currently loading
+  pickCache: {},     // per-tab store lists
+  storeRows: []      // full pool for the store page
+};
+async function api(path){
+  const res = await fetch(API + path, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'API error');
+  return data;
+}
+function fetchOnce(key, path){
+  if (live.pending[key]) return live.pending[key];
+  live.pending[key] = api(path).finally(() => { delete live.pending[key]; });
+  return live.pending[key];
+}
+
+const state = Object.assign({
+  view: 'home', storeCode: DATA.stores[0].code, channel: '2',
+  people: 1, budgetMode: 'per', budgetPer: 5000, budgetTotal: 5000,
+  prefs: {save:true, nutri:true, share:true, spice:false},
+  avoid: [], kcalMax: '', search: '', category: '__all__', filter: 'all',
+  cart: [], note: '',
+  pickTab: 'nearby', pickQuery: '', storeSort: 'distance',
+  storeAddr: DATA.address || ''
+}, load());
+
+function load(){
+  try { const raw = JSON.parse(localStorage.getItem(STORAGE) || 'null'); return raw && raw.cart ? raw : {}; } catch(e){ return {}; }
+}
+function save(){
+  try { localStorage.setItem(STORAGE, JSON.stringify({
+    storeCode: state.storeCode, channel: state.channel, people: state.people,
+    budgetMode: state.budgetMode, budgetPer: state.budgetPer, budgetTotal: state.budgetTotal,
+    prefs: state.prefs, avoid: state.avoid, kcalMax: state.kcalMax, cart: state.cart,
+    storeAddr: state.storeAddr
+  })); } catch(e){}
+}
+
+/* Store directory: live list when the proxy is up, snapshot list otherwise. */
+function storeDir(){
+  if (live.stores.length) return live.stores;
+  return DATA.stores.map((s) => ({
+    code: s.code, name: s.name, address: s.address || DATA.address || '',
+    distance: null, businessStatus: true, area: '快照', live: false
+  }));
+}
+function storeInfo(code){
+  return storeDir().find((s) => s.code === code) ||
+    (DATA.stores.find((s) => s.code === code) || DATA.stores[0]);
+}
+/* Current store record, preferring live directory metadata over the snapshot. */
+function store(){
+  const info = storeInfo(state.storeCode);
+  const snap = DATA.stores.find((s) => s.code === state.storeCode);
+  return Object.assign({}, snap || {}, info, { channels: (snap && snap.channels) || {} });
+}
+/* Menu for the active channel: live payload wins, snapshot is the fallback. */
+function channelData(){
+  const code = state.storeCode, kind = state.channel;
+  const liveKey = code + ':' + kind;
+  if (live.menus[liveKey]) return live.menus[liveKey];
+  const s = store();
+  return s.channels[kind] || s.channels['2'] || Object.values(s.channels)[0] || { categories: [], productCount: 0, couponCount: 0, promotions: [] };
+}
+function allItems() {
+  const out = [];
+  (channelData().categories || []).forEach((c) => c.items.forEach((i) => out.push(Object.assign({cat: c.name}, i))));
+  return out;
+}
+const groupMode = () => state.channel === '6';
+const budgetTotal = () => state.budgetMode === 'per' ? state.budgetPer * state.people : state.budgetTotal;
+const subtotal = () => state.cart.reduce((sum, l) => sum + l.price * l.qty, 0);
+const itemCount = () => state.cart.reduce((sum, l) => sum + l.qty, 0);
+
+/* ---- group discount: rates from live MCP promotions, estimated only ---- */
+function groupDiscount(sub){
+  if (!groupMode()) return {rate:1, label:'', note:''};
+  const tiers = [
+    {min:30000, GMS001:78, GMS002:88, GMS003:93},
+    {min:50000, GMS001:74, GMS002:84, GMS003:89},
+    {min:100000, GMS001:70, GMS002:80, GMS003:85},
+    {min:200000, GMS001:66, GMS002:76, GMS003:81}
+  ];
+  const tier = tiers.filter((t) => sub >= t.min).pop() || tiers[0];
+  if (sub < 30000) return {rate:1, label:'未达起送', note:'企业团餐需商品金额合计满 ¥300 起送，当前为预估。'};
+  const rate = tier.GMS001 / 100;
+  return {rate, label:'保鲜速达约 ' + (rate * 10).toFixed(1) + ' 折', note:'按满 ' + yuan(tier.min) + ' 档位估算，需在结算接口确认。'};
+}
+
+/* ---------------- recommendations ---------------- */
+const AVOID_MAP = {牛:'牛',猪:'猪',鸡:'鸡',鱼:'鱼',虾:'虾',奶:'奶|芝士|冰淇淋|新地|拿铁|奶铁|牛奶',蛋:'蛋',花生:'花生'};
+function blocked(item){
+  return state.avoid.some((a) => {
+    const pat = AVOID_MAP[a]; if (!pat) return false;
+    return new RegExp(pat).test(item.name);
+  });
+}
+function score(item){
+  let s = 0;
+  if (item.discount) s += 3;
+  if (item.original > item.price) s += 4 * (1 - item.price / item.original);
+  if (state.prefs.save) s += (item.original - item.price) / Math.max(item.price, 1) * 6;
+  if (state.prefs.nutri && item.nutrition && item.nutrition.kcal) s += Math.max(0, 2 - item.nutrition.kcal / 400);
+  if (state.prefs.share && /套餐|分享|双人|三人|四人|桶|盒/.test(item.name)) s += 2.2;
+  if (state.prefs.spice && /辣|龙焰|椒盐|韩式/.test(item.name)) s += 1.4;
+  if (blocked(item)) s -= 100;
+  if (state.kcalMax && item.nutrition && item.nutrition.kcal && item.nutrition.kcal > Number(state.kcalMax)) s -= 50;
+  return s;
+}
+const GOODS = /丝巾|棒球帽|帽子|公仔|玩具|徽章|帆布|杯套|贴纸|手办|毛绒/;
+const edible = (i) => !GOODS.test(i.name);
+const recommended = () => allItems().filter((i) => edible(i) && !blocked(i)).sort((a,b) => score(b) - score(a)).slice(0, 12);
+const dealItems = () => allItems().filter((i) => edible(i) && !i.withOrder && i.original > i.price).sort((a,b) => (1 - a.price/a.original) - (1 - b.price/b.original)).slice(0, 6);
+
+/* ---------------------------- render ---------------------------- */
+function heroHTML(){
+  const s = store(), ch = channelData();
+  const isGroup = groupMode();
+  const tierText = isGroup ? '企业团餐 · 满 ¥300 起送 · 可预约' : '麦乐送 · 外送费另计';
+  const st = openState(s);
+  const loading = live.loadingStore === s.code;
+  return `<section class="panel hero">
+    <div class="hero-top">
+      <div>
+        <div class="kicker">当前门店</div>
+        <h1>${esc(s.name)}</h1>
+        <div class="meta"><span>${esc(s.address || DATA.address)}</span><span>${tierText}</span></div>
+        <div class="pill-row" style="margin-top:9px">
+          <span class="pill">编号 ${esc(s.code)}</span>
+          ${s.distance != null ? `<span class="pill">${distanceText(s.distance)}</span>` : ''}
+          <span class="pill">${loading ? '菜单加载中…' : ch.productCount + ' 个商品'}</span>
+          <span class="pill ${ch.couponCount ? 'green' : ''}">门店券 ${ch.couponCount}</span>
+          ${isGroup ? `<span class="pill yellow">团餐折扣 ${(ch.promotions || []).length} 条</span>` : ''}
+        </div>
+      </div>
+      <div style="display:grid;gap:8px;justify-items:end">
+        <span class="status" ${st.cls === 'shut' ? 'style="color:#9a5a4e;background:#f6ecea"' : ''}><i ${st.cls === 'shut' ? 'style="background:#9a5a4e"' : ''}></i>${st.text} · ${isGroup ? '团餐' : '可下单'}</span>
+        <button class="link" id="heroSwitch" style="padding:0;white-space:nowrap">切换门店 ▾</button>
+      </div>
+    </div>
+    <div style="padding:12px 22px 14px;border-top:1px solid var(--line-2)">
+      <div class="channel" role="group" aria-label="点餐方式">
+        <button data-channel="2" aria-pressed="${!isGroup}">麦乐送<span>单人/多人都可</span></button>
+        <button data-channel="6" aria-pressed="${isGroup}">企业团餐<span>满300起送 · 折扣</span></button>
+      </div>
+    </div>
+    ${heroBody(s)}
+  </section>`;
+}
+function heroBody(s){
+  const isGroup = groupMode();
+  return `<div class="hero-body">
+    <div class="hero-budget">
+      <div class="field">
+        <div class="lbl">用餐人数 <span class="hint">会影响人均预算</span></div>
+        <div class="stepper">
+          <button data-people="-1" aria-label="减少人数">−</button>
+          <input id="peopleInput" class="num" type="number" min="1" max="99" value="${state.people}" aria-label="用餐人数">
+          <button data-people="1" aria-label="增加人数">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="lbl">预算口径
+          <span class="seg">
+            <button data-bmode="per" aria-pressed="${state.budgetMode==='per'}">人均</button>
+            <button data-bmode="total" aria-pressed="${state.budgetMode==='total'}">总额</button>
+          </span>
+        </div>
+        <div class="money"><span class="cur">¥</span><input id="budgetInput" class="num" type="number" min="0" step="1" value="${((state.budgetMode==='per'?state.budgetPer:state.budgetTotal)/100).toFixed(0)}" aria-label="预算金额"></div>
+        <div class="hint" id="budgetSummary" style="margin-top:7px">当前：${state.budgetMode==='per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal)} · 合计 ${yuan(budgetTotal())}${state.people>1 ? '（' + state.people + ' 人）' : ''}</div>
+      </div>
+      <div class="hint">${isGroup ? '团餐按商品金额合计计算折扣；分餐/摆台服务会改变折扣档位。' : '外送费、打包费与最终优惠以结算接口为准，这里只做预算参考。'}</div>
+    </div>
+    <div class="hero-note">
+      <div class="lbl">已启用的偏好</div>
+      <div class="pill-row">
+        ${state.prefs.save ? '<span class="pill red">优先省钱</span>' : ''}
+        ${state.prefs.nutri ? '<span class="pill green">关注营养</span>' : ''}
+        ${state.prefs.share ? '<span class="pill">多人分餐</span>' : ''}
+        ${state.prefs.spice ? '<span class="pill">喜欢辣</span>' : ''}
+        ${state.avoid.length ? `<span class="pill yellow">忌口：${esc(state.avoid.join('、'))}</span>` : ''}
+        ${(!state.prefs.save && !state.prefs.nutri && !state.prefs.share && !state.prefs.spice && !state.avoid.length) ? '<span class="hint">未设置，按销量与优惠排序</span>' : ''}
+      </div>
+      <button class="link" data-nav="prefs" style="margin-top:12px;padding:0">调整偏好与忌口 →</button>
+      <div class="hint" style="margin-top:14px;color:#8b7a63">${isGroup ? '团餐为独立渠道，菜单与折扣和麦乐送不同。' : '单人直接下单；多人也可以走麦乐送，只是没有团餐折扣。'}</div>
+    </div>
+  </div>`;
+}
+/* ---------------- store switching ----------------
+   One picker (in-place dropdown) plus one full store page. Switching never
+   scrolls the page and never forces the user to hunt for a list further down. */
+function openState(s){
+  if (!s.businessStartTime || !s.businessEndTime) return { text: '营业时间未知', cls: '' };
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
+  const open = cur >= toMin(s.businessStartTime) && cur <= toMin(s.businessEndTime);
+  return { text: open ? '营业中' : '休息中', cls: open ? 'open' : 'shut', hours: s.businessStartTime + '–' + s.businessEndTime };
+}
+function distanceText(d){
+  if (d == null) return '';
+  return d >= 1000 ? (d / 1000).toFixed(1) + ' km' : d + ' m';
+}
+function storeFacts(s){
+  const bits = [];
+  if (s.distance != null) bits.push(distanceText(s.distance));
+  const st = openState(s);
+  bits.push(`<i class="${st.cls}">${st.text}</i>`);
+  if (s.reservation) bits.push('<i>可预约</i>');
+  if (s.code) bits.push('<i>编号 ' + esc(s.code) + '</i>');
+  return bits.join('');
+}
+function storeLabel(s){
+  return (s.name || '').replace(/^麦当劳(上海)?/, '') || s.name;
+}
+function pickRow(s, opts){
+  const o = opts || {};
+  const active = s.code === state.storeCode;
+  return `<button class="pick-row" data-store="${esc(s.code)}" aria-current="${active}" ${o.raw ? `data-raw="1"` : ''}>
+    <i class="mk"></i>
+    <span class="tx">
+      <b>${esc(s.name)}</b>
+      <span>${esc(s.address || '')}</span>
+      <span class="facts">${storeFacts(s)}</span>
+    </span>
+    <span class="go">${active ? '当前' : '切换'}</span>
+  </button>`;
+}
+
+/* Picker data sources: nearby / deliverable / favorites / full pool. */
+function pickRows(){
+  const q = state.pickQuery.trim().toLowerCase();
+  let rows = live.pickCache[state.pickTab] || [];
+  if (q) rows = rows.filter((s) =>
+    (s.name || '').toLowerCase().includes(q) ||
+    (s.address || '').toLowerCase().includes(q) ||
+    (s.area || '').toLowerCase().includes(q));
+  return rows;
+}
+function renderPickList(){
+  const box = byId('pickList');
+  const rows = pickRows();
+  if (!rows.length) {
+    box.innerHTML = `<div class="pick-empty">${state.pickQuery ? '没有匹配的门店，换个关键词试试' : '正在获取门店…'}</div>`;
+    return;
+  }
+  box.innerHTML = rows.slice(0, 60).map((s) => pickRow(s)).join('');
+}
+function renderPick(){
+  renderPickList();
+  document.querySelectorAll('[data-picktab]').forEach((b) =>
+    b.setAttribute('aria-pressed', String(b.dataset.picktab === state.pickTab)));
+}
+function openPicker(){
+  byId('pickPanel').classList.add('on');
+  byId('pickScrim').classList.add('on');
+  byId('addrChip').setAttribute('aria-expanded', 'true');
+  renderPick();
+  const input = byId('pickSearch');
+  if (state.pickQuery) input.value = state.pickQuery;
+  loadPickTab(state.pickTab);
+}
+function closePicker(){
+  byId('pickPanel').classList.remove('on');
+  byId('pickScrim').classList.remove('on');
+  byId('addrChip').setAttribute('aria-expanded', 'false');
+}
+function pickTabPath(tab){
+  if (tab === 'nearby') return '/stores?mode=nearby&keyword=' + encodeURIComponent(state.pickQuery || '漕宝路');
+  if (tab === 'deliver') return '/stores?mode=deliver&beType=' + state.channel;
+  if (tab === 'fav') return '/stores?mode=favorites&beType=' + state.channel;
+  return '/stores?mode=browse';
+}
+function loadPickTab(tab){
+  state.pickTab = tab;
+  renderPick();
+  if (!live.online) return;
+  const key = 'pick:' + tab + ':' + (state.pickQuery || '漕宝路');
+  if (live.pickCache[tab] && tab !== 'nearby') return;
+  fetchOnce(key, pickTabPath(tab))
+    .then((data) => { live.pickCache[tab] = data.stores || []; renderPickList(); })
+    .catch(() => { live.pickCache[tab] = []; renderPickList(); });
+}
+
+/* Live menu for the active store + channel. */
+function loadMenu(code, kind){
+  const key = code + ':' + kind;
+  if (live.menus[key]) return Promise.resolve(live.menus[key]);
+  if (!live.online) return Promise.resolve(null);
+  live.loadingStore = code;
+  return fetchOnce('menu:' + key, '/menu?code=' + encodeURIComponent(code) + '&beType=' + kind)
+    .then((data) => {
+      live.menus[key] = data.menu;
+      live.loadingStore = null;
+      render();
+      return data.menu;
+    })
+    .catch(() => { live.loadingStore = null; return null; });
+}
+function switchStore(code){
+  if (code === state.storeCode) { closePicker(); return; }
+  state.storeCode = code;
+  state.category = '__all__';
+  state.search = '';
+  state.cart = [];
+  const info = storeInfo(code);
+  if (info && info.address) state.storeAddr = info.address;
+  save();
+  closePicker();
+  render();
+  toast('已切换到 ' + (info ? info.name : code));
+  loadMenu(code, state.channel);
+  if (state.view === 'stores') render();
+}
+function syncAddrChip(){
+  const s = store();
+  const nameEl = byId('addrName'), subEl = byId('addrSub');
+  if (nameEl) nameEl.textContent = storeLabel(s) || s.name;
+  if (subEl) {
+    const bits = [];
+    if (s.address) bits.push(s.address);
+    bits.push(groupMode() ? '企业团餐' : '麦乐送');
+    if (s.distance != null) bits.unshift(distanceText(s.distance));
+    subEl.textContent = bits.join(' · ');
+  }
+}
+
+/* ---------------- full store page ---------------- */
+function storeSortRows(rows){
+  const list = rows.slice();
+  if (state.storeSort === 'distance') {
+    list.sort((a, b) => (a.distance == null ? 1e9 : a.distance) - (b.distance == null ? 1e9 : b.distance));
+  } else if (state.storeSort === 'name') {
+    list.sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh'));
+  } else if (state.storeSort === 'open') {
+    list.sort((a, b) => (openState(a).cls === 'open' ? 0 : 1) - (openState(b).cls === 'open' ? 0 : 1));
+  }
+  return list;
+}
+function viewStores(){
+  const rows = storeSortRows(live.storeRows || storeDir());
+  const q = state.pickQuery.trim().toLowerCase();
+  const shown = q ? rows.filter((s) => (s.name || '').toLowerCase().includes(q) || (s.address || '').toLowerCase().includes(q)) : rows;
+  return `<section class="panel" style="overflow:hidden">
+    <div class="stores-top">
+      <div class="sec-head" style="margin:0">
+        <div><h2>选择门店</h2><p>共 ${shown.length} 家 · 切换后菜单、优惠与券会一起更新</p></div>
+        <button class="link" id="backHome">返回首页</button>
+      </div>
+      <div class="stores-bar">
+        <div class="search">🔎<input id="storeSearch" placeholder="搜门店名或地址" value="${esc(state.pickQuery)}" autocomplete="off" aria-label="搜索门店"></div>
+        <div class="sorts" role="group" aria-label="排序">
+          <button data-sort="distance" aria-pressed="${state.storeSort==='distance'}">距离最近</button>
+          <button data-sort="open" aria-pressed="${state.storeSort==='open'}">营业中优先</button>
+          <button data-sort="name" aria-pressed="${state.storeSort==='name'}">按名称</button>
+        </div>
+      </div>
+    </div>
+    ${shown.length ? `<div class="store-grid">${shown.map((s) => {
+      const st = openState(s);
+      const active = s.code === state.storeCode;
+      return `<button class="store-card" data-store="${esc(s.code)}" data-active="${active}">
+        <div class="hd"><b>${esc(s.name)}</b><span class="go">${active ? '当前门店' : '切换'}</span></div>
+        <div class="addr">${esc(s.address || '')}</div>
+        <div class="facts">
+          ${s.distance != null ? `<i>${distanceText(s.distance)}</i>` : ''}
+          <i class="${st.cls}">${st.text}</i>
+          ${st.hours ? `<i>${st.hours}</i>` : ''}
+          ${s.reservation ? '<i>可预约</i>' : ''}
+          <i>编号 ${esc(s.code)}</i>
+        </div>
+      </button>`;
+    }).join('')}</div>` : `<div class="empty"><b>没有匹配的门店</b>换个关键词，或清空搜索看看全部。</div>`}
+  </section>`;
+}
+
+function dealHTML(){
+  const deals = dealItems();
+  if (!deals.length) return '';
+  return `<section class="panel sec">
+    <div class="sec-head"><div><h2>这家店正在降价的</h2><p>原价与现价均来自门店菜单接口</p></div><button class="link" data-nav="menu">全部菜单 →</button></div>
+    <div class="deal-grid">
+      ${deals.slice(0,4).map((i) => `<button class="deal" data-open="${esc(i.code)}" style="text-align:left">
+        <b>${esc(i.name)}</b>
+        <span>${i.discount ? esc(i.discount) : '门店促销'}${i.nutrition && i.nutrition.kcal ? ' · ' + Math.round(i.nutrition.kcal) + ' kcal' : ''}</span>
+        <div class="big num" style="margin-top:7px">${yuan(i.price)} <s style="font-size:11px;color:#837568;font-weight:500">${yuan(i.original)}</s></div>
+      </button>`).join('')}
+    </div>
+  </section>`;
+}
+function recHTML(){
+  const list = recommended();
+  return `<section class="panel sec">
+    <div class="sec-head"><div><h2>根据你的偏好推荐</h2><p>${state.prefs.save ? '优先优惠力度' : '按优惠与热度'}${state.prefs.nutri ? ' + 热量可控' : ''}${state.avoid.length ? ' · 已排除忌口' : ''}</p></div></div>
+    <div class="hscroll">
+      ${list.map((i, idx) => `<button class="rec" data-open="${esc(i.code)}" aria-label="${esc(i.name)} ${yuan(i.price)}">
+        <div class="thumb">${i.image ? `<img ${idx < 4 ? '' : 'loading="lazy" '}decoding="async" src="${esc(i.image)}" alt="" onload="this.style.opacity=1" onerror="this.style.display='none'">` : `<span class="ph">${esc(i.name.slice(0,1))}</span>`}</div>
+        <div class="body"><div class="nm">${esc(i.name)}</div><div class="pr num">${yuan(i.price)}${i.original > i.price ? `<s>${yuan(i.original)}</s>` : ''}</div></div>
+      </button>`).join('')}
+    </div>
+  </section>`;
+}
+function storeHTML(){
+  const dir = storeDir();
+  const near = dir.slice(0, 4);
+  return `<section class="panel sec">
+    <div class="sec-head"><div><h2>换个门店</h2><p>共 ${dir.length} 家可选 · 点右上角地址栏可随时切换，不必翻页</p></div><button class="link" data-nav="stores">全部门店 →</button></div>
+    <div class="store-list">
+      ${near.map((s) => {
+        const ch = DATA.stores.find((x) => x.code === s.code);
+        const n = ch ? ((ch.channels[state.channel] || ch.channels['2'] || {}).productCount || 0) : null;
+        return `<button class="store-row" data-store="${esc(s.code)}" data-active="${s.code===state.storeCode}">
+          <i class="dot"></i>
+          <span class="txt"><b>${esc(s.name)}</b><span>${s.address || ''}${s.distance != null ? ' · ' + distanceText(s.distance) : ''}${n ? ' · ' + n + ' 个商品' : ''}</span></span>
+          <span class="go">${s.code===state.storeCode ? '当前' : '切换'}</span>
+        </button>`;
+      }).join('')}
+    </div>
+  </section>`;
+}
+function activityHTML(){
+  return `<section class="panel sec">
+    <div class="sec-head"><div><h2>今日活动与说明</h2><p>来自活动日历与接口规则，宣传价不等于结算价</p></div></div>
+    <div class="act">
+      <div class="act-row"><span class="tag">10/24</span><div><b>韩式风味蘸酱上新</b><p>「我就喜欢」鸡薯双全盒、蘸酱炸鸡、龙焰系列参与；仅部分餐厅、早餐时段后供应。</p></div></div>
+      <div class="act-row"><span class="tag">门店券</span><div><b>当前 ${channelData().couponCount} 张可用券</b><p>门店券按“门店 + 点餐方式”查询；账户里其他券不一定适用于本单。</p></div></div>
+      <div class="act-row"><span class="tag">说明</span><div><b>价格口径</b><p>菜单价来自 query-meals（元），结算接口返回分；本页估算按菜单价计算，最终以 calculate-price 为准。</p></div></div>
+    </div>
+  </section>`;
+}
+
+function viewHome(){
+  return heroHTML() + dealHTML() + recHTML() + storeHTML() + activityHTML();
+}
+
+/* ---------------------------- menu ---------------------------- */
+function categories(){ return channelData().categories; }
+function filtered(){
+  let items = allItems();
+  if (state.category === '__all__') items = items;
+  else if (state.category === '__rec__') items = recommended().slice(0, 24);
+  else items = items.filter((i) => i.cat === state.category);
+  if (state.search.trim()) {
+    const q = state.search.trim().toLowerCase();
+    items = items.filter((i) => i.name.toLowerCase().includes(q) || (i.tags || []).join(' ').toLowerCase().includes(q));
+  }
+  if (state.filter === 'deal') items = items.filter((i) => i.original > i.price);
+  if (state.filter === 'fit') items = items.filter((i) => i.nutrition && i.nutrition.kcal && i.nutrition.kcal <= 500);
+  if (state.filter === 'safe') items = items.filter((i) => !blocked(i));
+  if (state.filter === 'protein') items = items.filter((i) => i.nutrition && i.nutrition.protein >= 15);
+  return items;
+}
+function qtyOf(code){ return state.cart.filter((l) => l.code === code).reduce((s,l) => s + l.qty, 0); }
+/* 带套餐组成（rounds）的商品必须先选规格，不能直接加购 */
+const COMBO = new Set(Object.keys(DATA.details || {}).filter((k) => {
+  const d = DATA.details[k] && DATA.details[k].data;
+  return !!(d && (d.rounds || []).length);
+}));
+function productCard(i, idx){
+  const q = qtyOf(i.code);
+  const off = i.original > i.price ? Math.round((1 - i.price / i.original) * 100) : 0;
+  const spec = COMBO.has(i.code);
+  return `<article class="pc">
+    <button class="thumb" data-open="${esc(i.code)}" aria-label="查看 ${esc(i.name)} 详情">
+      ${i.image ? `<img ${idx < 8 ? '' : 'loading="lazy" '}decoding="async" src="${esc(i.image)}" alt="" onload="this.style.opacity=1" onerror="this.style.display='none';this.parentNode.querySelector('.ph').style.display='grid'"><span class="ph" style="display:none;position:absolute">${esc(i.name.slice(0,1))}</span>` : `<span class="ph">${esc(i.name.slice(0,1))}</span>`}
+      ${off >= 20 ? `<span class="badge">省 ${off}%</span>` : i.discount ? `<span class="badge alt">${esc(i.discount.replace('优惠',''))}</span>` : ''}
+    </button>
+    <div class="body">
+      <button class="nm" data-open="${esc(i.code)}" style="text-align:left">${esc(i.name)}</button>
+      <div class="tg">${(i.tags || []).slice(0,2).map((t) => `<i>${esc(t)}</i>`).join('')}${i.nutrition && i.nutrition.kcal ? `<i>${Math.round(i.nutrition.kcal)} kcal</i>` : ''}${GOODS.test(i.name) ? '<i>非餐品</i>' : ''}</div>
+      <div class="foot">
+        <span class="price num">${yuan(i.price)}${i.original > i.price ? `<s>${yuan(i.original)}</s>` : ''}</span>
+        ${q ? `<span class="qty"><button data-dec="${esc(i.code)}" aria-label="减少">−</button><span class="num">${q}</span><button data-inc="${esc(i.code)}" aria-label="增加">+</button></span>`
+            : spec ? `<button class="add spec" data-add="${esc(i.code)}" aria-label="选规格">选规格</button>`
+            : `<button class="add" data-add="${esc(i.code)}" aria-label="加入购物车">+</button>`}
+      </div>
+    </div>
+  </article>`;
+}
+function viewMenu(){
+  const cats = categories();
+  const items = filtered();
+  return `<div class="menu-bar">
+      <div class="search">🔎<input id="searchInput" placeholder="搜菜单，例如：鸡腿堡 / 咖啡 / 套餐" value="${esc(state.search)}" aria-label="搜索菜单"></div>
+      <div class="cats">
+        <button data-cat="__all__" aria-pressed="${state.category==='__all__'}">全部 <span class="num" style="opacity:.55">${allItems().length}</span></button>
+        <button data-cat="__rec__" aria-pressed="${state.category==='__rec__'}">推荐</button>
+        ${cats.map((c) => `<button data-cat="${esc(c.name)}" aria-pressed="${state.category===c.name}">${esc(c.name)} <span class="num" style="opacity:.55">${c.items.length}</span></button>`).join('')}
+      </div>
+      <div class="filters">
+        <button class="chip" data-filter="all" aria-pressed="${state.filter==='all'}">全部</button>
+        <button class="chip" data-filter="deal" aria-pressed="${state.filter==='deal'}">有优惠</button>
+        <button class="chip" data-filter="fit" aria-pressed="${state.filter==='fit'}">≤500 kcal</button>
+        <button class="chip" data-filter="protein" aria-pressed="${state.filter==='protein'}">高蛋白</button>
+        <button class="chip" data-filter="safe" aria-pressed="${state.filter==='safe'}">避开忌口</button>
+      </div>
+    </div>
+    <section class="panel sec" style="margin-top:12px">
+      <div class="sec-head"><div><h2>${state.category==='__all__' ? '全部菜单' : state.category==='__rec__' ? '推荐搭配' : esc(state.category)}</h2><p>${store().name} · ${groupMode() ? '企业团餐' : '麦乐送'} · 共 ${items.length} 项</p></div><span class="pill">${state.filter==='all' ? '未筛选' : '已筛选'}</span></div>
+      ${items.length ? `<div class="menu-grid">${items.map((it, idx) => productCard(it, idx)).join('')}</div>` : `<div class="empty"><b>这个条件下没有商品</b>换个分类或清掉筛选试试。</div>`}
+    </section>`;
+}
+
+/* ---------------------------- prefs ---------------------------- */
+function viewPrefs(){
+  const t = (key, label, desc) => `<button class="toggle" data-pref="${key}" aria-pressed="${!!state.prefs[key]}"><span>${label}<br><span class="hint">${desc}</span></span><i class="sw"></i></button>`;
+  return `<section class="panel sec">
+    <div class="sec-head"><div><h2>口味与取向</h2><p>开启后会影响首页推荐与菜单排序</p></div></div>
+    <div class="pref-grid">
+      ${t('save','优先省钱','更看折扣和低价')}
+      ${t('nutri','关注营养','热量与蛋白质优先')}
+      ${t('share','多人分餐','套餐、分享装靠前')}
+      ${t('spice','喜欢辣','辣味与椒盐风味靠前')}
+    </div>
+  </section>
+  <section class="panel sec">
+    <div class="sec-head"><div><h2>忌口</h2><p>只在有名称线索时排除，不作为过敏原判断</p></div></div>
+    <div class="pref-chips">
+      ${['牛','猪','鸡','鱼','虾','奶','蛋','花生'].map((a) => `<button data-avoid="${a}" aria-pressed="${state.avoid.includes(a)}">${a}</button>`).join('')}
+    </div>
+    <div class="notebox">名称匹配只能排除明显相关的餐品；麦当劳 MCP 当前没有提供完整过敏原表，不能据此保证无过敏风险。</div>
+  </section>
+  <section class="panel sec">
+    <div class="sec-head"><div><h2>热量上限</h2><p>可选；只对能匹配到营养数据的餐品生效</p></div></div>
+    <div class="money" style="max-width:220px"><input id="kcalInput" class="num" type="number" min="0" step="10" placeholder="例如 500" value="${esc(state.kcalMax)}" aria-label="每份热量上限"><span class="cur" style="padding-right:12px;padding-left:0">kcal</span></div>
+  </section>
+  <section class="panel sec">
+    <div class="sec-head"><div><h2>预算</h2><p>人均与总额都可直接填金额</p></div></div>
+    <div class="pref-grid">
+      <div class="field"><div class="lbl">人均预算</div><div class="money"><span class="cur">¥</span><input id="prefPer" class="num" type="number" min="0" value="${(state.budgetPer/100).toFixed(0)}" aria-label="人均预算"></div></div>
+      <div class="field"><div class="lbl">总预算（${state.people} 人）</div><div class="money"><span class="cur">¥</span><input id="prefTotal" class="num" type="number" min="0" value="${(budgetTotal()/100).toFixed(0)}" aria-label="总预算"></div></div>
+    </div>
+    <div class="hint">改人均会自动换算总额（人数 × 人均）；改总额会反算人均。</div>
+  </section>
+  <section class="panel sec">
+    <div class="sec-head"><div><h2>数据与边界</h2></div></div>
+    <div class="kv">
+      <div><span>菜单快照</span><b>${esc(DATA.capturedAt)}</b></div>
+      <div><span>门店 / 渠道</span><b>${esc(store().name)} · ${groupMode() ? '团餐' : '麦乐送'}</b></div>
+      <div><span>可下单</span><b>否（只读预览）</b></div>
+    </div>
+    <button class="btn ghost" style="margin-top:12px" id="resetBtn">清空购物车与偏好</button>
+  </section>`;
+}
+
+/* ---------------------------- cart / preview ---------------------------- */
+function cartLines(){
+  if (!state.cart.length) return `<div class="empty"><b>购物车还是空的</b>从菜单挑一份，或回首页看推荐。</div>`;
+  return state.cart.map((l, idx) => `<div class="cart-line">
+    <div class="img">${l.image ? `<img src="${esc(l.image)}" alt="" onload="this.style.opacity=1">` : `<b>${esc(l.name.slice(0,1))}</b>`}</div>
+    <div class="mid">
+      <div class="nm">${esc(l.name)}</div>
+      ${l.mods && l.mods.length ? `<div class="sub">定制：${esc(l.mods.slice(0, 3).join('、'))}${l.mods.length > 3 ? ' 等 ' + l.mods.length + ' 项' : ''}</div>` : ''}
+      ${l.note ? `<div class="sub">备注：${esc(l.note)}</div>` : ''}
+      <div class="sub num">${yuan(l.price)} × ${l.qty}</div>
+    </div>
+    <div class="right">
+      <span class="lp num">${yuan(l.price * l.qty)}</span>
+      <span class="qty-s"><button data-cart-dec="${idx}" aria-label="减少">−</button><span class="num">${l.qty}</span><button data-cart-inc="${idx}" aria-label="增加">+</button></span>
+    </div>
+  </div>`).join('');
+}
+function billHTML(){
+  const sub = subtotal();
+  const gd = groupDiscount(sub);
+  const pay = Math.round(sub * gd.rate);
+  const total = budgetTotal();
+  const per = state.people ? pay / state.people : pay;
+  return `<div class="bill">
+    <div><span>商品金额</span><b class="num">${yuan2(sub)}</b></div>
+    ${groupMode() ? `<div><span>团餐折扣（估算）${gd.label ? '· ' + esc(gd.label) : ''}</span><b class="num">${gd.rate < 1 ? '−' + yuan2(sub - pay) : '—'}</b></div>` : ''}
+    <div><span>外送费 / 打包费</span><b>结算时计算</b></div>
+    <div class="total"><span>预估合计</span><b class="num">${yuan2(pay)}</b></div>
+    <div><span>人均</span><b class="num">${yuan2(Math.round(per))}</b></div>
+    <div><span>预算 ${state.budgetMode==='per' ? `人均 ${yuan(state.budgetPer)} × ${state.people} 人` : '总额'} = ${yuan(total)}</span><b class="num" style="color:${pay>total?'#8f1208':'#1f7a4d'}">${pay>total?'超 '+yuan2(pay-total):'余 '+yuan2(total-pay)}</b></div>
+  </div>
+  ${groupMode() && sub < 30000 ? `<div class="warnbox">团餐需商品金额合计满 ¥300 起送，当前 ${yuan2(sub)}，还差 ${yuan2(30000-sub)}。可加分享装或小食，或切到麦乐送。</div>` : ''}
+  <div class="notebox">${gd.note || '优惠与费用以 calculate-price 返回为准；本页不建单、不支付。'}</div>`;
+}
+function viewCart(){
+  const sub = subtotal();
+  return `<section class="panel sec">
+    <div class="sec-head"><div><h2>购物车</h2><p>${itemCount()} 件 · ${esc(store().name)} · ${groupMode()?'团餐':'麦乐送'}</p></div><span class="pill ${groupMode()?'yellow':''}">${groupMode()?'满 ¥300 起送':'外送费另计'}</span></div>
+    ${cartLines()}
+    ${state.cart.length ? billHTML() : ''}
+    <div style="display:flex;gap:9px;margin-top:14px">
+      <button class="btn ghost" data-nav="menu">继续选餐</button>
+      <button class="btn" style="flex:1" data-nav="preview" ${state.cart.length?'':'disabled'}>去预览订单</button>
+    </div>
+  </section>`;
+}
+function viewPreview(){
+  const sub = subtotal(), gd = groupDiscount(sub), pay = Math.round(sub * gd.rate), total = budgetTotal();
+  return `<section class="panel" style="overflow:hidden">
+    <div class="preview-hd">
+      <div class="kicker">订单预览 · 未提交</div>
+      <h2>${itemCount()} 件，预估 ${yuan2(pay)}</h2>
+      <p class="hint">这是本地预览。确认按钮不创建真实订单，也不会触发支付。</p>
+    </div>
+    <div class="sec">
+      <div class="kv">
+        <div><span>配送地址</span><b>${esc(DATA.address)}</b></div>
+        <div><span>门店</span><b>${esc(store().name)}（${esc(store().code)}）</b></div>
+        <div><span>点餐方式</span><b>${groupMode() ? '企业团餐 · 保鲜速达（预估）' : '麦乐送'}</b></div>
+        <div><span>人数 / 预算</span><b>${state.people} 人 · ${state.budgetMode==='per'?'人均':'总额'} ${yuan(total)}</b></div>
+        <div><span>偏好</span><b>${[state.prefs.save&&'省钱',state.prefs.nutri&&'营养',state.prefs.share&&'分餐',state.prefs.spice&&'辣'].filter(Boolean).join(' · ') || '未设置'}</b></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><div><h2>点单内容</h2><p>可直接改数量</p></div></div>
+      ${cartLines()}
+      ${state.cart.length ? billHTML() : `<div class="empty"><b>还没有商品</b>先去菜单选几样。</div>`}
+    </div>
+    <div class="sec">
+      <div class="lbl">整单备注</div>
+      <textarea id="noteInput" rows="2" placeholder="例如：分餐标注姓名；不要餐具" maxlength="50" style="width:100%;border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;resize:vertical">${esc(state.note)}</textarea>
+      <div class="confirmbar">
+        <button class="btn block" disabled>确认下单（本版未开放）</button>
+        <button class="btn ghost block" data-nav="menu">返回继续选餐</button>
+      </div>
+      <div class="notebox">要真正下单，需要在服务端用麦当劳 MCP 走 calculate-price → create-order，并把支付链接交给本人扫码。当前快照页面不含任何下单或支付能力。</div>
+    </div>
+  </section>`;
+}
+
+/* ---------------------------- detail sheet ---------------------------- */
+const findItem = (code) => allItems().find((i) => i.code === code);
+let sheetState = {code:null, qty:1, sel:new Set(), groups:[], note:''};
+
+/* Combo detection.
+   The snapshot only shipped details for 24 products, so 12 of 16 items named
+   "套餐" were mis-detected as plain items and could skip spec selection. The
+   live proxy exposes query-meal-detail on demand, so detection is now based
+   on the real rounds payload instead of a hardcoded set. */
+const COMBO = new Set(Object.keys(DATA.details || {}).filter((k) => {
+  const d = DATA.details[k] && DATA.details[k].data;
+  return !!(d && (d.rounds || []).length);
+}));
+const COMBO_PENDING = new Set();
+function comboState(code){
+  if (COMBO.has(code)) return true;
+  if (COMBO_PENDING.has(code)) return false;
+  return null; // unknown until detail arrives
+}
+/* Names that indicate a combo before the detail payload is known. */
+const COMBO_HINT = /套餐|超值|双人份|三人份|四人份/;
+function looksLikeCombo(item){
+  return COMBO.has(item.code) || (COMBO_HINT.test(item.name || '') && !item.comboKnown);
+}
+function detailData(code){
+  const raw = DATA.details && DATA.details[code];
+  const d = raw && raw.data;
+  if (d) return d;
+  const cached = live.details[state.storeCode + ':' + code];
+  return cached || null;
+}
+function fetchDetail(code){
+  if (!live.online) return Promise.resolve(null);
+  const key = state.storeCode + ':' + code;
+  if (live.details[key]) return Promise.resolve(live.details[key]);
+  return fetchOnce('detail:' + key, '/detail?code=' + encodeURIComponent(state.storeCode) + '&product=' + encodeURIComponent(code) + '&beType=' + state.channel)
+    .then((data) => { live.details[key] = data.detail || null; return live.details[key]; })
+    .catch(() => null);
+}
+/* Resolve whether an item needs spec selection; unknown combos are checked
+   against the live detail endpoint once and then cached. */
+function resolveCombo(code, item){
+  if (COMBO.has(code)) return Promise.resolve(true);
+  if (live.details[state.storeCode + ':' + code]) {
+    const d = live.details[state.storeCode + ':' + code];
+    const isCombo = !!(d && (d.rounds || []).length);
+    if (isCombo) COMBO.add(code);
+    return Promise.resolve(isCombo);
+  }
+  if (!live.online) return Promise.resolve(looksLikeCombo(item || {code, name: ''}));
+  COMBO_PENDING.add(code);
+  return fetchDetail(code).then((d) => {
+    COMBO_PENDING.delete(code);
+    const isCombo = !!(d && (d.rounds || []).length);
+    if (isCombo) COMBO.add(code);
+    return isCombo;
+  });
+}
+/* 单品定制项在 d.modification；套餐的定制项挂在 round.choices[].modification 上 */
+function collectMods(d){
+  const groups = [];
+  const push = (list, owner) => (list || []).forEach((m) => {
+    if (!m || !(m.values || []).length) return;
+    groups.push({owner: owner || '', maxValues: m.maxValues, values: m.values});
+  });
+  if (d.modification && d.modification.items) push(d.modification.items, '');
+  /* 只取每轮默认选择的定制项，否则会把所有备选单品的加料全列出来 */
+  (d.rounds || []).forEach((r) => (r.choices || []).forEach((c) => {
+    if (c.isDefault !== 1) return;
+    if (c.modification && c.modification.items) push(c.modification.items, c.name);
+  }));
+  return groups;
+}
+const modKey = (gi, name) => gi + '|' + name;
+function modLabels(){
+  const out = [];
+  sheetState.groups.forEach((g, gi) => g.values.forEach((v) => {
+    if (!sheetState.sel.has(modKey(gi, v.name))) return;
+    out.push(g.owner ? g.owner + '·' + v.name : v.name);
+  }));
+  return out;
+}
+function openDetail(code){
+  const item = findItem(code); if (!item) return;
+  const d = detailData(code);
+  const rounds = (d && d.rounds) || [];
+  const groups = d ? collectMods(d) : [];
+  const sel = new Set();
+  groups.forEach((g, gi) => g.values.forEach((v) => {
+    if ((v.selectedQuantity || 0) > 0) sel.add(modKey(gi, v.name));
+  }));
+  sheetState = {code, qty:1, sel, groups, note:''};
+  byId('sheetTitle').textContent = item.name;
+  const nutri = item.nutrition;
+  byId('sheetBody').innerHTML = `
+    <div class="detail-top">
+      <div class="img">${item.image ? `<img src="${esc(item.image)}" alt="" onload="this.style.opacity=1">` : `<b style="font-size:30px;color:#dccbb2">${esc(item.name.slice(0,1))}</b>`}</div>
+      <div>
+        <h3>${esc(item.name)}</h3>
+        <div class="p num">${yuan(item.price)}${item.original > item.price ? `<s>${yuan(item.original)}</s>` : ''}</div>
+        <div class="note">${item.discount ? esc(item.discount) + ' · ' : ''}${item.withOrder ? '需随单购卡才享优惠价 · ' : ''}${(item.tags || []).join(' / ') || '门店在售'}</div>
+      </div>
+    </div>
+    ${rounds.length ? `<div style="margin-top:16px"><div class="lbl">套餐组成 <span>来自 query-meal-detail</span></div>
+      ${rounds.map((r) => `<div class="round"><div class="rh">${esc(r.name)}<span>×${r.quantity}</span></div>
+        <ul>${(r.choices || []).map((c) => `<li>${esc(c.name)}${c.isDefault === 1 ? '<span class="def">默认</span>' : ''}${c.supportModify ? ' <span class="pill" style="padding:0 5px;font-size:10px">可特调</span>' : ''}${c.diffPrice && c.diffPrice !== '+ ¥0' ? ` <span class="hint">${esc(c.diffPrice)}</span>` : ''}</li>`).join('')}</ul>
+      </div>`).join('')}
+    </div>` : ''}
+    ${groups.length ? `<div style="margin-top:14px"><div class="lbl">可特调 <span>来自 query-meal-detail</span></div>
+      ${groups.map((g, gi) => `<div class="mod-group"><div class="gh">${g.owner ? esc(g.owner) + ' · 加料/去料' : '选项 ' + (gi + 1)}<span>最多选 ${g.maxValues != null ? g.maxValues : '—'} 项</span></div>
+        <div class="opts">${g.values.map((v) => {
+          const on = sel.has(modKey(gi, v.name));
+          return `<button class="opt" data-mod="${esc(modKey(gi, v.name))}" aria-pressed="${on}">${esc(v.name)}${v.price ? ` +¥${v.price}` : ''}</button>`;
+        }).join('')}</div></div>`).join('')}
+    </div>` : `<div class="notebox" style="margin-top:14px">这件商品暂无返回的定制项。可以写备注，但是否可做需门店确认。</div>`}
+    ${nutri ? `<div style="margin-top:14px"><div class="lbl">营养（每份）<span>来自营养接口</span></div>
+      <div class="nutri">
+        <div><b class="num">${nutri.kcal != null ? Math.round(nutri.kcal) : '—'}</b><span>kcal</span></div>
+        <div><b class="num">${nutri.protein != null ? nutri.protein : '—'}</b><span>蛋白 g</span></div>
+        <div><b class="num">${nutri.fat != null ? nutri.fat : '—'}</b><span>脂肪 g</span></div>
+        <div><b class="num">${nutri.carb != null ? nutri.carb : '—'}</b><span>碳水 g</span></div>
+        <div><b class="num">${nutri.sodium != null ? nutri.sodium : '—'}</b><span>钠 mg</span></div>
+      </div></div>` : `<div class="hint" style="margin-top:12px">这件商品没有匹配到营养数据。</div>`}
+    <div class="field" style="margin-top:14px"><div class="lbl">备注（选填，≤50 字）</div>
+      <input id="itemNote" maxlength="50" placeholder="例如：不要生菜" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px"></div>
+  `;
+  renderSheetFoot();
+  const sheetEl = byId('sheet');
+  sheetEl.scrollTop = 0;
+  byId('scrim').classList.add('on'); sheetEl.classList.add('on');
+}
+function renderSheetFoot(){
+  const item = findItem(sheetState.code); if (!item) return;
+  const labels = modLabels();
+  byId('sheetFoot').innerHTML = `<div class="sum">小计 <b class="num">${yuan(sheetPrice() * sheetState.qty)}</b><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${labels.length ? esc(labels.join('、')) : '无定制'}</span></div>
+    <span class="qty-s" style="height:40px"><button data-sheet-dec aria-label="减少">−</button><span class="num">${sheetState.qty}</span><button data-sheet-inc aria-label="增加">+</button></span>
+    <button class="btn" id="sheetAdd">加入购物车</button>`;
+}
+/* 定制项单价按接口返回的分累加 */
+function sheetPrice(){
+  const item = findItem(sheetState.code); if (!item) return 0;
+  let extra = 0;
+  sheetState.groups.forEach((g, gi) => g.values.forEach((v) => {
+    if (sheetState.sel.has(modKey(gi, v.name)) && v.price) extra += Number(v.price) || 0;
+  }));
+  return item.price + extra;
+}
+function closeSheet(){ byId('scrim').classList.remove('on'); byId('sheet').classList.remove('on'); }
+
+/* ---------------------------- cart ops ---------------------------- */
+function addToCart(code, mods, note, qty, unitPrice){
+  const item = findItem(code); if (!item) return;
+  const list = (mods || []).slice();
+  const keyOf = (arr) => arr.slice().sort().join('|');
+  const k = keyOf(list);
+  const price = unitPrice == null ? item.price : unitPrice;
+  const existing = state.cart.find((l) => l.code === code && keyOf(l.mods || []) === k && (l.note||'') === (note||''));
+  if (existing) existing.qty += (qty || 1);
+  else state.cart.push({code, name:item.name, price, image:item.image, mods:list, note:note||'', qty:qty||1});
+  save(); syncChrome(); toast('已加入 · ' + item.name);
+}
+function changeLine(idx, delta){
+  const line = state.cart[idx]; if (!line) return;
+  line.qty += delta;
+  if (line.qty <= 0) state.cart.splice(idx, 1);
+  save(); render(); syncChrome();
+}
+
+/* ---------------------------- chrome / nav ---------------------------- */
+function syncChrome(){
+  const c = itemCount();
+  byId('cartCount').textContent = c;
+  byId('railCart').textContent = c;
+  const bot = byId('botCount');
+  bot.textContent = c; bot.hidden = !c;
+  const sub = subtotal(), gd = groupDiscount(sub), pay = Math.round(sub * gd.rate), total = budgetTotal();
+  byId('railUsed').textContent = yuan(Math.round(pay));
+  byId('railBudget').textContent = '/ ' + yuan(total);
+  byId('budgetModeLbl').textContent = state.budgetMode === 'per' ? `人均 ${yuan(state.budgetPer)} × ${state.people} 人` : '总额';
+  const pct = total ? Math.min(100, pay / total * 100) : 0;
+  const bar = byId('railBar');
+  bar.style.width = pct + '%';
+  bar.className = pay > total ? 'over' : pct > 85 ? 'warn' : '';
+  byId('railHint').textContent = !sub ? '还没有选餐' : pay > total ? '超出预算 ' + yuan(pay - total) : '剩余 ' + yuan(total - pay);
+  document.querySelectorAll('[data-nav]').forEach((b) => b.setAttribute('aria-current', String(b.dataset.nav === state.view)));
+}
+function render(){
+  const v = state.view;
+  byId('view').innerHTML = v === 'home' ? viewHome() : v === 'menu' ? viewMenu() : v === 'stores' ? viewStores() : v === 'prefs' ? viewPrefs() : v === 'cart' ? viewCart() : viewPreview();
+  syncChrome();
+  if (v === 'menu') { const s = byId('searchInput'); if (s && state.search) s.focus(); }
+}
+function go(view){ state.view = view; window.scrollTo({top:0,behavior:'auto'}); render(); }
+let toastTimer;
+function toast(msg){
+  const t = byId('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1500);
+}
+
+/* ---------------------------- events ---------------------------- */
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('button, [data-nav], [data-store]');
+  if (!t) return;
+  if (t.dataset.nav) { go(t.dataset.nav); return; }
+  if (t.dataset.picktab) { loadPickTab(t.dataset.picktab); return; }
+  if (t.dataset.sort) { state.storeSort = t.dataset.sort; render(); return; }
+  if (t.id === 'backHome') { go('home'); return; }
+  if (t.id === 'heroSwitch') { openPicker(); return; }
+  if (t.id === 'pickMore') { closePicker(); go('stores'); return; }
+  if (t.dataset.store) { switchStore(t.dataset.store); return; }
+  if (t.dataset.channel) {
+    const next = t.dataset.channel;
+    if (next !== state.channel) {
+      state.channel = next; state.category = '__all__';
+      state.cart = []; save(); render();
+      toast(next === '6' ? '已切换到企业团餐（满 ¥300 起送）' : '已切换到麦乐送');
+      loadMenu(state.storeCode, next);
+    }
+    return;
+  }
+  if (t.dataset.people) {
+    state.people = Math.max(1, Math.min(99, state.people + Number(t.dataset.people)));
+    if (state.budgetMode === 'per') state.budgetTotal = state.budgetPer * state.people;
+    save(); render(); return;
+  }
+  if (t.dataset.bmode) {
+    const mode = t.dataset.bmode;
+    if (mode !== state.budgetMode) {
+      state.budgetMode = mode;
+      if (mode === 'total') state.budgetTotal = state.budgetPer * state.people;
+      save(); render();
+    }
+    return;
+  }
+  if (t.dataset.cat) { state.category = t.dataset.cat; render(); return; }
+  if (t.dataset.filter) { state.filter = t.dataset.filter; render(); return; }
+  if (t.dataset.open) { openDetail(t.dataset.open); return; }
+  if (t.dataset.add) {
+    const code = t.dataset.add;
+    if (COMBO.has(code)) { openDetail(code); return; }
+    addToCart(code, [], '', 1); render(); return;
+  }
+  if (t.dataset.inc) {
+    const code = t.dataset.inc;
+    if (COMBO.has(code)) {
+      const line = [...state.cart].reverse().find((l) => l.code === code);
+      if (!line) { openDetail(code); return; }
+      line.qty += 1; save(); render(); return;
+    }
+    addToCart(code, [], '', 1); render(); return;
+  }
+  if (t.dataset.dec) {
+    const code = t.dataset.dec;
+    const idx = COMBO.has(code)
+      ? state.cart.map((l) => l.code).lastIndexOf(code)
+      : state.cart.findIndex((l) => l.code === code);
+    if (idx >= 0) changeLine(idx, -1); return;
+  }
+  if (t.dataset.cartInc) { changeLine(Number(t.dataset.cartInc), 1); return; }
+  if (t.dataset.cartDec) { changeLine(Number(t.dataset.cartDec), -1); return; }
+  if (t.dataset.pref) { state.prefs[t.dataset.pref] = !state.prefs[t.dataset.pref]; save(); render(); return; }
+  if (t.dataset.avoid) {
+    const a = t.dataset.avoid;
+    state.avoid = state.avoid.includes(a) ? state.avoid.filter((x) => x !== a) : state.avoid.concat(a);
+    save(); render(); return;
+  }
+  if (t.dataset.mod) {
+    const key = t.dataset.mod;
+    const pressed = t.getAttribute('aria-pressed') === 'true';
+    t.setAttribute('aria-pressed', String(!pressed));
+    if (pressed) sheetState.sel.delete(key); else sheetState.sel.add(key);
+    renderSheetFoot();
+    return;
+  }
+  if (t.dataset.sheetInc) { sheetState.qty++; renderSheetFoot(); return; }
+  if (t.dataset.sheetDec) { sheetState.qty = Math.max(1, sheetState.qty - 1); renderSheetFoot(); return; }
+});
+
+document.addEventListener('input', (e) => {
+  const id = e.target.id;
+  if (id === 'budgetInput') {
+    const val = Math.max(0, Math.round(Number(e.target.value || 0) * 100));
+    if (state.budgetMode === 'per') { state.budgetPer = val; state.budgetTotal = val * state.people; }
+    else state.budgetTotal = val;
+    save(); syncChrome();
+    const lbl = byId('budgetSummary');
+    if (lbl) lbl.textContent = '当前：' + (state.budgetMode === 'per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal)) + ' · 合计 ' + yuan(budgetTotal()) + (state.people > 1 ? '（' + state.people + ' 人）' : '');
+    return;
+  }
+  if (id === 'peopleInput') {
+    const n = Math.max(1, Math.min(99, Number(e.target.value || 1)));
+    state.people = n;
+    if (state.budgetMode === 'per') state.budgetTotal = state.budgetPer * n;
+    save(); syncChrome();
+    const hint = byId('budgetSummary');
+    if (hint) hint.textContent = '当前：' + (state.budgetMode === 'per' ? '人均 ' + yuan(state.budgetPer) : '总额 ' + yuan(state.budgetTotal)) + ' · 合计 ' + yuan(budgetTotal()) + (n > 1 ? '（' + n + ' 人）' : '');
+    return;
+  }
+  if (id === 'searchInput') { state.search = e.target.value; render(); return; }
+  if (id === 'pickSearch') {
+    state.pickQuery = e.target.value;
+    renderPickList();
+    if (state.pickTab === 'nearby') loadPickTab('nearby');
+    return;
+  }
+  if (id === 'storeSearch') { state.pickQuery = e.target.value; render(); return; }
+  if (id === 'kcalInput') { state.kcalMax = e.target.value; save(); return; }
+  if (id === 'prefPer') {
+    state.budgetPer = Math.max(0, Math.round(Number(e.target.value || 0) * 100));
+    state.budgetTotal = state.budgetPer * state.people; save();
+    const t = byId('prefTotal'); if (t) t.value = (state.budgetTotal / 100).toFixed(0);
+    return;
+  }
+  if (id === 'prefTotal') {
+    state.budgetTotal = Math.max(0, Math.round(Number(e.target.value || 0) * 100));
+    state.budgetPer = Math.round(state.budgetTotal / Math.max(1, state.people)); save();
+    const p = byId('prefPer'); if (p) p.value = (state.budgetPer / 100).toFixed(0);
+    return;
+  }
+  if (id === 'itemNote') { sheetState.note = e.target.value; return; }
+  if (id === 'noteInput') { state.note = e.target.value; save(); return; }
+});
+
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'sheetAdd') {
+    addToCart(sheetState.code, modLabels(), sheetState.note, sheetState.qty, sheetPrice());
+    closeSheet(); go('cart');
+  }
+});
+
+byId('sheetClose').addEventListener('click', closeSheet);
+byId('scrim').addEventListener('click', closeSheet);
+byId('cartBtn').addEventListener('click', () => go('cart'));
+/* 门店切换就地在地址栏下方展开，不再跳转到页面下方 */
+byId('switchBtn').addEventListener('click', () => openPicker());
+byId('addrChip').addEventListener('click', () => {
+  const open = byId('pickPanel').classList.contains('on');
+  if (open) closePicker(); else openPicker();
+});
+byId('pickScrim').addEventListener('click', closePicker);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeSheet(); closePicker(); } });
+
+byId('snapStamp').textContent = DATA.capturedAt;
+document.addEventListener('click', (e) => { if (e.target.id === 'resetBtn') {
+  state.cart = []; state.prefs = {save:true,nutri:true,share:true,spice:false}; state.avoid = [];
+  state.budgetPer = 5000; state.budgetTotal = 5000 * state.people; state.kcalMax = '';
+  save(); render(); toast('已清空');
+}});
+
+/* ---------------- boot: detect proxy, pull live stores ---------------- */
+function boot(){
+  render();
+  syncAddrChip();
+  api('/health')
+    .then(() => {
+      live.online = true;
+      const stamp = byId('snapStamp');
+      if (stamp) stamp.textContent = '实时（本地代理 · ' + new Date().toLocaleTimeString('zh-CN', {hour12:false}) + '）';
+      const note = byId('dataNote');
+      if (note) note.textContent = '数据来自麦当劳 MCP 实时接口，经本地只读代理转发。价格以结算接口为准，本页不建单、不支付。';
+      return fetchOnce('browse', '/stores?mode=browse');
+    })
+    .then((data) => {
+      live.stores = data.stores || [];
+      live.storeRows = live.stores;
+      live.pickCache.all = live.stores;
+      render();
+      loadMenu(state.storeCode, state.channel);
+    })
+    .catch(() => {
+      live.online = false;
+      const note = byId('dataNote');
+      if (note) note.textContent = '本地代理未启动，当前为静态快照（' + (DATA.capturedAt || '') + '）。启动 tools/mcd-server.py 可获得实时门店与菜单。';
+      const stamp = byId('snapStamp');
+      if (stamp) stamp.textContent = '离线快照';
+    });
+}
+boot();
+})();
+</script>
+</body>
+</html>

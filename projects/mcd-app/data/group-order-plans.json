@@ -1,0 +1,56 @@
+{
+  "occasion": "下午茶",
+  "people": 20,
+  "budget": 500,
+  "timeLabel": "送达时间待定 · 保鲜速达",
+  "plans": [
+    {
+      "id": "A",
+      "title": "一人一份轻食搭饮品",
+      "tag": "逐份好拿",
+      "recommendation": "一人一份薯饼，薯条和鸡块切开分享，不吃甜食也吃得饱。",
+      "categorySummary": "饮品20份、小食31份",
+      "currentPrice": 492.8,
+      "originalPrice": 519,
+      "serviceLabels": ["保鲜速达"],
+      "items": [
+        {
+          "name": "脆薯饼",
+          "quantity": 20,
+          "imageUrl": "https://menu-img.mcd.cn/pcm/prod/menu/ProductPool/product/MS_521741_320.png",
+          "linePrice": 160
+        },
+        {
+          "name": "脆脆薯条",
+          "quantity": 6,
+          "imageUrl": "https://menu-img.mcd.cn/pcm/prod/menu/20250523/product/MS_514782_320_1747877523158.png",
+          "linePrice": 93
+        },
+        {
+          "name": "麦乐鸡5块",
+          "quantity": 3,
+          "imageUrl": "https://menu-img.mcd.cn/pcm/prod/menu/20260529/product/MS_G1401_320.png",
+          "linePrice": 42
+        },
+        {
+          "name": "心形薯饼8块",
+          "quantity": 2,
+          "imageUrl": "https://menu-img.mcd.cn/pcm/prod/menu/20261021/product/MS_G521986_320.png",
+          "linePrice": 19.8
+        },
+        {
+          "name": "可乐",
+          "quantity": 14,
+          "imageUrl": "https://menu-img.mcd.cn/pcm/prod/menu/ProductPool/product/MS_G9900008751_320.gif",
+          "linePrice": 133
+        },
+        {
+          "name": "纯悦",
+          "quantity": 6,
+          "imageUrl": "https://menu-img.mcd.cn/pcm/prod/menu/20240904/product/MS_3757_320.png",
+          "linePrice": 45
+        }
+      ]
+    }
+  ]
+}
