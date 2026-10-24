@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUTPUTS = ROOT / 'outputs'
+APP_DIR = ROOT / 'app'
 def _find_mcp_config():
     candidates = []
     env = os.environ.get('MCD_MCP_CONFIG')
@@ -182,22 +182,56 @@ class Cache:
             self.store[key] = (time.time(), value)
 
 
+class McdConfigError(RuntimeError):
+    """Raised when the MCP config file is missing or malformed."""
+
+
 class McdService:
+    """Talks to the MCP server on demand.
+
+    The config is read lazily so that the server still starts (and still serves
+    the static snapshot) on a machine that has no MCP credentials at all.
+    """
+
     def __init__(self):
-        config = json.loads(MCP_CONFIG.read_text())['mcpServers']['mcd-mcp']
-        self.url = config['url']
-        self.headers = config['headers']
         self.cache = Cache()
         self.pool = ThreadPoolExecutor(max_workers=6)
         self._local = threading.local()
         self._pool_lock = threading.Lock()
         self._clients = []
         self.nutrition_rows = None
+        self._config = None
+
+    @property
+    def config(self):
+        if self._config is None:
+            if MCP_CONFIG is None:
+                raise McdConfigError(
+                    'MCP config not found. Create an mcp.json with an '
+                    'mcpServers.mcd-mcp entry (url + headers) and point '
+                    'MCD_MCP_CONFIG at it, or put it at ~/.workbuddy/mcp.json. '
+                    'The static snapshot still works without it.')
+            try:
+                raw = json.loads(MCP_CONFIG.read_text(encoding='utf-8'))
+                entry = raw['mcpServers']['mcd-mcp']
+                self._config = {'url': entry['url'], 'headers': entry['headers']}
+            except Exception as exc:
+                raise McdConfigError(
+                    f'Cannot read MCP config at {MCP_CONFIG}: {exc}') from exc
+        return self._config
+
+    @property
+    def url(self):
+        return self.config['url']
+
+    @property
+    def headers(self):
+        return self.config['headers']
 
     def client(self):
         client = getattr(self._local, 'client', None)
         if client is None:
-            client = McpClient(self.url, self.headers)
+            client = McpClient(self.url, self.headers)  # raises McdConfigError
             self._local.client = client
             with self._pool_lock:
                 self._clients.append(client)
@@ -603,7 +637,7 @@ SERVICE = McdService()
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(OUTPUTS), **kwargs)
+        super().__init__(*args, directory=str(APP_DIR), **kwargs)
 
     def log_message(self, fmt, *args):
         pass
@@ -622,7 +656,7 @@ class Handler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == '/':
             # Serve the app itself at the root instead of a directory listing.
-            self.path = '/qibao-mcd-app.html'
+            self.path = '/index.html'
             return super().do_GET()
         if not parsed.path.startswith('/api/'):
             return super().do_GET()
@@ -704,8 +738,20 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json({'ok': False, 'error': 'orderId required'}, 400)
                 return self._json({'ok': True, 'order': SERVICE.query_order(body['orderId'])})
             if parsed.path == '/api/health':
+                try:
+                    mcp_url = SERVICE.url
+                    credentialed = True
+                except McdConfigError as exc:
+                    mcp_url = None
+                    credentialed = False
+                    health_error = str(exc)
+                else:
+                    health_error = None
                 return self._json({'ok': True, 'service': 'mcd-local-proxy',
-                                   'mcp': SERVICE.url, 'time': time.strftime('%F %T')})
+                                   'mcp': mcp_url,
+                                   'credentialed': credentialed,
+                                   'error': health_error,
+                                   'time': time.strftime('%F %T')})
             return self._json({'ok': False, 'error': 'unknown endpoint'}, 404)
         except Exception as exc:  # noqa: BLE001 - surface the reason to the UI
             return self._json({'ok': False, 'error': str(exc)}, 502)
@@ -730,6 +776,11 @@ def main():
         port = int(sys.argv[sys.argv.index('--port') + 1])
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     print(f'McDonald\'s local proxy on http://127.0.0.1:{port}/', flush=True)
+    if MCP_CONFIG is None:
+        print('No MCP config found - serving the static snapshot only.', flush=True)
+        print('Live data needs an mcp.json (mcpServers.mcd-mcp with url + headers).', flush=True)
+    else:
+        print(f'MCP config: {MCP_CONFIG}', flush=True)
     server.serve_forever()
 
 
